@@ -3,14 +3,16 @@
 # Last match wins. Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
 # Default owner for everything
-*                           @Donchitos
+*                           @johndematteo
 
 # Core configuration — owner review required
-CLAUDE.md                   @Donchitos
-.claude/                    @Donchitos
-settings.json               @Donchitos
+AGENTS.md                   @johndematteo
+CLAUDE.md                   @johndematteo
+.claude/                    @johndematteo
+studio/                     @johndematteo
+settings.json               @johndematteo
 
 # Skills and agents — high-impact, review carefully
-.claude/skills/             @Donchitos
-.claude/agents/             @Donchitos
-.claude/hooks/              @Donchitos
+studio/skills/             @johndematteo
+studio/agents/             @johndematteo
+studio/hooks/              @johndematteo

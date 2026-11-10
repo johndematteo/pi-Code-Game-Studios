@@ -1,7 +1,7 @@
 # Shell scripts must use LF line endings. core.autocrlf=true would otherwise
 # convert them to CRLF on checkout, which breaks bash on Windows Git Bash
 # (stray \r corrupts commands and string comparisons). This applies to the
-# .claude/hooks/*.sh hooks and .claude/scripts/*.sh.
+# studio/hooks/*.sh hooks and studio/scripts/*.sh.
 *.sh text eol=lf
 
 # awk programs the helpers read with `awk -f` (yaml-get.awk). Git Bash gawk
@@ -26,4 +26,7 @@
 #     which buries real changes.
 # .gitattributes governs the INDEX. It does not retro-fix a working tree that
 # predates the rule -- run `git add --renormalize .` for that.
+# Markdown under studio/ is the shared tree (skills, agents, rules, docs).
+# .claude/**/*.md still covers a checkout that materializes those paths.
+studio/**/*.md text eol=lf
 .claude/**/*.md text eol=lf

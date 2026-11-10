@@ -1,0 +1,8 @@
+---
+description: Game studio instructions and shared skills
+alwaysApply: true
+---
+
+Follow `AGENTS.md` at the repository root. Shared skills, agents, rules, hooks, scripts, and docs are in `studio/`. `.claude/` is the Claude Code adapter: `settings.json` plus symlinks into `studio/`.
+
+When a workflow is named (`/prototype`, `/start`, and the rest), read `studio/skills/<name>/SKILL.md` and follow it. Path-scoped standards are in `studio/rules/`.

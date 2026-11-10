@@ -3,6 +3,8 @@
 This guide covers upgrading your existing game project repo from one version
 of the template to the next.
 
+**Current layout.** Shared skills, agents, rules, hooks, scripts, and docs live in `studio/`. `AGENTS.md` is the instruction file. `.claude/` is the Claude Code adapter (`settings.json` and symlinks into `studio/`). Sections below still say `.claude/` when they describe the tree those older versions shipped.
+
 **Find your current version** — use the first of these that applies:
 
 - **Cloned the template, or merged it:** `git describe --tags --abbrev=0` prints

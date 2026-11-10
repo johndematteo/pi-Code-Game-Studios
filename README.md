@@ -1,7 +1,7 @@
 <p align="center">
   <h1 align="center">Claude Code Game Studios</h1>
   <p align="center">
-    Describe a game. Claude Code asks a few questions, writes a one-page brief,
+    Describe a game. Your coding agent asks a few questions, writes a one-page brief,
     and builds a playable browser game from it.
     <br />
     Then you change it, grow it and finish it, one step at a time.
@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
-  <a href="https://code.claude.com/docs"><img src="https://img.shields.io/badge/built%20for-Claude%20Code-f5f5f5?logo=anthropic" alt="Built for Claude Code"></a>
+  <a href="https://agents.md"><img src="https://img.shields.io/badge/works%20with-any%20coding%20agent-f5f5f5" alt="Works with any coding agent"></a>
   <a href="https://www.buymeacoffee.com/donchitos3"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Support%20this%20project-FFDD00?logo=buymeacoffee&logoColor=black" alt="Buy Me a Coffee"></a>
   <a href="https://github.com/sponsors/Donchitos"><img src="https://img.shields.io/badge/GitHub%20Sponsors-Support%20this%20project-ea4aaa?logo=githubsponsors&logoColor=white" alt="GitHub Sponsors"></a>
 </p>
@@ -19,7 +19,7 @@
 
 ## Make me a game
 
-Open Claude Code in a copy of this repository and say what you want:
+Open a copy of this repository in your coding agent and say what you want:
 
 ```
 /prototype a fishing game where the rare fish only bite at dusk
@@ -106,7 +106,7 @@ clutter, not evidence.
 ### Prerequisites
 
 - [Git](https://git-scm.com/)
-- [Claude Code](https://code.claude.com/docs/en/setup) — the native installer is recommended (`npm install -g @anthropic-ai/claude-code` also works, on Node.js 22+)
+- A coding agent that reads [`AGENTS.md`](AGENTS.md) — Cursor, Claude Code, Codex, and others use the same `studio/` tree. Claude Code also reads the thin `CLAUDE.md` adapter
 - [Python 3](https://www.python.org/) — reads `project.yaml` for every skill and hook; without it every setting silently falls back to its default
 - Bash — runs every hook; built into macOS and Linux, and on Windows it comes with [Git for Windows](https://git-scm.com/downloads/win). Without it on Windows the hooks skip themselves, and session start says their checks are off
 - **Chrome, Edge or Chromium** — `/prototype` plays and screenshots each game in it; without one, those checks say they were not assessed
@@ -122,17 +122,20 @@ Hooks fail gracefully if optional tools are missing — you just lose validation
    cd my-game
    ```
 
-2. **Open Claude Code in the project's root folder** (the one holding
-   `CLAUDE.md` and `project.yaml`) and start a session:
+2. **Open the project's root folder** (the one holding `AGENTS.md` and
+   `project.yaml`) in your coding agent. On Claude Code, start the session
+   in that folder:
    ```bash
    claude
    ```
-   Starting it in a subfolder such as `src/` skips the project's hooks, deny
-   rules and ask-first permission mode.
+   Starting Claude Code in a subfolder such as `src/` skips the adapter's
+   hooks, deny rules and ask-first permission mode. Other agents follow
+   `AGENTS.md` from the root either way.
 
-3. **Type `/prototype` and your idea**, or **run `/start`**, which asks where
-   you are (make me a game, an idea or none yet, clear design, existing work)
-   and guides you to the right workflow. No assumptions.
+3. **Ask for the prototype skill and your idea**, or **run the start skill**.
+   Where the host has slash commands, those are `/prototype` and `/start`.
+   `/start` asks where you are (make me a game, an idea or none yet, clear
+   design, existing work) and guides you to the right workflow. No assumptions.
 
    Other ways in:
    - `/next-step` — names the one next step wherever you are
@@ -153,7 +156,7 @@ Hooks fail gracefully if optional tools are missing — you just lose validation
 (`docs/engine-reference/<engine>/`). With no engine set, `/prototype` builds
 in the browser first; you pick an engine after you have played the game. Each
 engine's folders and default commands come from one table,
-`.claude/engines/engines.tsv`. If your code or tests live somewhere else, set
+`studio/engines/engines.tsv`. If your code or tests live somewhere else, set
 `engine.code_root` or `engine.test_root` in `project.yaml`.
 
 ## Configuration
@@ -203,7 +206,7 @@ View or change any setting with the `/project-settings` skill:
 /project-settings --local modes.review_mode=solo   # write to project.local.yaml (just you)
 ```
 
-Full schema and per-setting behavior: `.claude/docs/effects-map.md`.
+Full schema and per-setting behavior: `studio/docs/effects-map.md`.
 
 ## Upgrading
 
@@ -214,10 +217,10 @@ versions, and which files are safe to overwrite vs. which need a manual merge.
 ## Project Structure
 
 ```
-CLAUDE.md                           # Master configuration
+AGENTS.md                           # Shared instructions (every coding agent)
+CLAUDE.md                           # Claude Code adapter — loads AGENTS.md
 project.yaml                        # Project settings: engine, modes, goal
-.claude/
-  settings.json                     # Hooks, permissions, safety rules
+studio/                             # The shared tree. One copy, not one per host
   agents/                           # 49 agent definitions (markdown + YAML frontmatter)
   skills/                           # 75 skills, plus three old names (a subdirectory each)
   hooks/                            # 18 scripts (bash) — 15 event hooks, two helpers they
@@ -232,6 +235,9 @@ project.yaml                        # Project settings: engine, modes, goal
   docs/
     workflow-catalog.yaml           # 7-phase pipeline definition (read by /next-step)
     templates/                      # 62 document templates (+ per-section guidance)
+.claude/                            # Claude Code adapter: settings.json and symlinks into studio/
+.agents/skills/                     # Symlink so Agent Skills hosts find studio/skills
+.cursor/                            # Cursor adapter: one rule, and a skills symlink
 prototypes/                         # One-shots, one folder each (isolated from src/)
 references/                         # Optional: images and sounds you like, for /prototype
 src/                                # Game source code (Godot, Web). The code root is
@@ -265,7 +271,7 @@ It tests the *framework*, never your game — game tests live in `tests/`.
 
 ## Hooks, Permissions and Rules
 
-**Hooks** run automatically on every session:
+**Hooks** are the bash checks in `studio/hooks/`. Claude Code runs them on every session from `.claude/settings.json`. Other agents run the same scripts when a skill calls them; attach those scripts to the host's own hook system if you want the same automatic checks.
 
 | Hook | Trigger | What It Does |
 |------|---------|--------------|
@@ -283,7 +289,7 @@ It tests the *framework*, never your game — game tests live in `tests/`.
 | `log-agent.sh` | Agent spawned | Audit trail start — logs subagent invocation |
 | `log-agent-stop.sh` | Agent stops | Audit trail stop — completes subagent record |
 | `validate-agent-artifact.sh` | Agent stops | Warns when a subagent stops without writing the file its brief named |
-| `validate-skill-change.sh` | PostToolUse (Write/Edit) | Advises running `/skill-test` after any `.claude/skills/` change |
+| `validate-skill-change.sh` | PostToolUse (Write/Edit) | Advises running `/skill-test` after any `studio/skills/` change |
 
 > **Note**: `validate-commit.sh`, `validate-push.sh`, `validate-read.sh`, `validate-write.sh`, `validate-registry.sh`, `validate-assets.sh` and `validate-skill-change.sh` fire on every Bash, PowerShell, Read, Write or Edit tool call and exit immediately (exit 0) when the command or file path is not relevant. This is normal hook behavior — not a performance concern.
 
@@ -375,7 +381,7 @@ matches your project (a web project uses the general programmers):
 
 ### Slash Commands
 
-Type `/` in Claude Code to access all 75 skills (plus three old names that point to their new ones):
+The 75 skills (plus three old names that point to their new ones) live in `studio/skills/`. On a host with slash commands, type `/` and the skill name. Otherwise open that skill's `SKILL.md` or ask for it by name:
 
 **Make a Game**
 `/prototype` `/cut`
@@ -466,7 +472,7 @@ You stay in control. The agents provide structure and expertise, not autonomy.
 That is how a terminal session started at the project root behaves out of the
 box. The `guided` and `autonomous` automation settings, and Claude Code's own
 auto mode, trade some of these prompts for speed; see
-[setup-requirements.md](.claude/docs/setup-requirements.md) for the routes into
+[setup-requirements.md](studio/docs/setup-requirements.md) for the routes into
 auto mode.
 
 ## Design Philosophy
@@ -494,7 +500,7 @@ This is a **template**, not a locked framework. Everything is meant to be custom
 
 ## Platform Support
 
-Primary development on **Windows 10** with Git Bash. The hooks and scripts are also tested on **macOS** — its stock bash 3.2 and BSD tools, with and without `jq` — and on **Linux**. All hooks use POSIX-compatible patterns (`grep -E`, not `grep -P`) and include fallbacks for missing tools. The `notify.sh` hook uses PowerShell for Windows toast notifications and is a no-op elsewhere — desktop notifications on macOS/Linux are not yet wired. Please file issues for any platform-specific breakage.
+Primary development on **Windows 10** with Git Bash. The hooks and scripts are also tested on **macOS** — its stock bash 3.2 and BSD tools, with and without `jq` — and on **Linux**. The host adapters under `.claude/`, `.agents/`, and `.cursor/skills` are symlinks to `studio/`. Git for Windows needs symbolic links enabled (`core.symlinks`) so those adapters stay links instead of text files. All hooks use POSIX-compatible patterns (`grep -E`, not `grep -P`) and include fallbacks for missing tools. The `notify.sh` hook uses PowerShell for Windows toast notifications and is a no-op elsewhere — desktop notifications on macOS/Linux are not yet wired. Please file issues for any platform-specific breakage.
 
 ## Community
 
@@ -520,7 +526,7 @@ Sponsorships help fund time spent maintaining skills, adding new agents, keeping
 
 ---
 
-*Built for Claude Code. Maintained and extended — contributions welcome via [GitHub Discussions](https://github.com/Donchitos/Claude-Code-Game-Studios/discussions).*
+*Works with any coding agent that reads `AGENTS.md`. Maintained and extended — contributions welcome via [GitHub Discussions](https://github.com/Donchitos/Claude-Code-Game-Studios/discussions).*
 
 ## License
 
