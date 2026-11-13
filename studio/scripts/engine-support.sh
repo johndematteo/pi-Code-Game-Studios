@@ -28,10 +28,12 @@
 #   --root DIR   the project; defaults to the repo this script is in
 #   -h, --help   this text
 #
-# Output: TSV, one block per engine named in studio/engines/engines.tsv, in the
-# order the table lists them:
+# Output: TSV, one block per engine this repo knows, in the order the table
+# lists them, then any known engine the table has dropped:
 #   engine        <name>
+#   row-resolves  <yes|no>   whether the engine table has a row for this engine
 #   row           code_root=<v> test_root=<v> asset_root=<v> test=<v>  (- = none)
+#                 or `absent` when the table has no row for it
 #   enum          <accepts|rejects>  <the validator's message, or ->
 #   specialist    <agent|none>  <engine.name|technical-preferences.md|unset>
 #   script        <name>  <ok|unknown-engine|usage|missing|error>  <exit code>
@@ -71,9 +73,19 @@ YH="$ROOT/studio/hooks/yaml-helper.sh"
 cell() { awk -F'\t' -v engine="$1" -v col="$2" -f "$ROWER" "$ETAB" 2>/dev/null; }
 lc() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
 
+# The five engines this repo knows. A row deleted from the table would
+# otherwise vanish from the report without a word, so each of these gets a block
+# even when its row is gone.
+KNOWN="Godot Unity Unreal Web Bevy"
+
 # The engine names, skipping the header row: the table's first cell there is
-# `engine`, which is not an engine.
+# `engine`, which is not an engine. Any known engine the table has dropped is
+# appended, so it is reported rather than silently omitted.
 NAMES=$(awk -F'\t' 'NR == 1 { next } /^#/ || $0 == "" { next } { print $1 }' "$ETAB" | tr -d '\r')
+for k in $KNOWN; do
+  awk -F'\t' -v e="$k" '$1 == e { f = 1 } END { exit(f ? 0 : 1) }' "$ETAB" \
+    || NAMES="$NAMES $k"
+done
 
 # A scratch project for the scripts that need somewhere to look. Every engine
 # gets the same tree, with its own asset root present, so a script that reads the
@@ -114,19 +126,26 @@ script_state() {
   esac
 }
 
-NENG=0
+# Counted from the table itself: the loop below also walks engines the table
+# has dropped, and those are not rows.
+NENG=$(awk -F'\t' 'NR == 1 { next } /^#/ || $0 == "" { next } { n++ } END { print n + 0 }' "$ETAB" | tr -d '\r')
 for name in $NAMES; do
   [ -n "$name" ] || continue
-  NENG=$((NENG + 1))
   d="$WORK/$(lc "$name")"
   mkdir -p "$d" 2>/dev/null
   printf 'engine:\n  name: %s\n' "$name" > "$d/project.yaml"
   : > "$d/keep.txt"
 
   printf 'engine\t%s\n' "$name"
-  printf 'row\tcode_root=%s test_root=%s asset_root=%s test=%s\n' \
-    "$(cell "$name" code_root)" "$(cell "$name" test_root)" \
-    "$(cell "$name" asset_root)" "$(cell "$name" test)"
+  if awk -F'\t' -v e="$name" '$1 == e { f = 1 } END { exit(f ? 0 : 1) }' "$ETAB"; then
+    printf 'row-resolves\tyes\n'
+    printf 'row\tcode_root=%s test_root=%s asset_root=%s test=%s\n' \
+      "$(cell "$name" code_root)" "$(cell "$name" test_root)" \
+      "$(cell "$name" asset_root)" "$(cell "$name" test)"
+  else
+    printf 'row-resolves\tno\n'
+    printf 'row\tabsent\n'
+  fi
 
   # --- the config validator, asked about a file that names this engine ---
   if yh_call "$d" validate_yaml_enum project.yaml >/dev/null 2>&1; then
@@ -169,10 +188,9 @@ done
 
 printf 'engines\t%s\t%s\n' "$NENG" "studio/engines/engines.tsv"
 
-# A row deleted from the table would otherwise vanish from the report without a
-# word. Name the engines this repo knows and say whether each has a row, so a
-# dropped engine is visible as `absent` rather than silently missing.
-for known in Godot Unity Unreal Web Bevy; do
+# The same list again, as a summary line per known engine, so a dropped row is
+# visible as `absent` in one place rather than only in its block.
+for known in $KNOWN; do
   if awk -F'\t' -v e="$known" '$1 == e { f = 1 } END { exit(f ? 0 : 1) }' "$ETAB"; then
     printf 'table\t%s\tpresent\n' "$known"
   else
