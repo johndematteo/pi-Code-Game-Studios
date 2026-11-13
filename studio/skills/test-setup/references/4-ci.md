@@ -232,4 +232,60 @@ GitHub's `ubuntu-latest` image has Google Chrome on the `PATH`, which is what
 is in every Claude Code Game Studios project. `test-results/` holds Playwright's traces and
 screenshots of a failing test, and is empty when every test passed.
 
+### Bevy
+
+`test-scaffold.sh bevy` writes it (Phase 3); its text:
+
+```yaml
+name: Automated Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Run cargo test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # The toolchain the crate needs: a rust-toolchain.toml, if the project has
+      # one, wins over this. Bevy 0.20's MSRV is 1.97.1.
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      # Bevy's Linux build links ALSA and udev; without them the build stops
+      # before any test compiles. mesa-vulkan-drivers gives wgpu a software
+      # Vulkan adapter, so a test that builds a renderer can still run.
+      - name: Install system libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev libudev-dev mesa-vulkan-drivers
+
+      # The crate's own test command. A project whose tests need a real GPU
+      # should gate them behind a feature and name the headless set here:
+      # cargo test --no-default-features --features default_app
+      - name: Run Tests
+        run: cargo test
+```
+
+`cargo test` exits non-zero when any test fails, so the job fails with it. Two
+things are not optional: **`libasound2-dev` and `libudev-dev`** (Bevy's Linux
+build links them, and without them nothing compiles), and the toolchain the crate
+declares — a crate whose `rust-version` is above the runner's stable will not
+build. `mesa-vulkan-drivers` is the software adapter that lets a render-touching
+test run on a hosted runner; a project that does not want it should gate its
+render tests behind a feature instead.
+
+**Never** put a `cd tests/unit && cargo test` in CI. Cargo resolves the crate
+from `Cargo.toml` upward, so a nested invocation runs the same workspace from a
+different directory and finds no crate of its own.
+
+---
+
 ---

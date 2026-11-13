@@ -13,7 +13,7 @@
 #
 # Usage: bash studio/scripts/test-scaffold.sh ENGINE [--dry-run | --list] [--root DIR]
 #          [--module NAME] [--project NAME] [--date YYYY-MM-DD]
-#   ENGINE          godot, unity, unreal or web (the engine.name values, in any case;
+#   ENGINE          godot, unity, unreal, web or bevy (the engine.name values, in any case;
 #                   UE5 is not one)
 #   --dry-run       print what would be created (WOULD_CREATE), write nothing
 #   --list          print the project-relative paths this engine's scaffold
@@ -36,6 +36,9 @@
 #   unreal   Source/<Module>/Private/Tests/README.md
 #   web      tests/unit/.gitkeep, tests/integration/.gitkeep, playwright.config.ts
 #            (the web scaffold's own, studio/engines/web/scaffold/)
+#   bevy     nothing beyond the shared files: cargo compiles tests/<name>.rs at
+#            the top of tests/, so a tests/unit/ folder would never run, and
+#            tests/README.md keeps tests/ in git
 #   all      .github/workflows/tests.yml, tests/smoke/critical-paths.md
 # The skill asks Godot's two test folders to hold a .gdignore_placeholder file;
 # Godot knows no such name (.gdignore would hide the folder from the editor and
@@ -93,11 +96,11 @@ while [ $# -gt 0 ]; do
     *) [ -z "$ENGINE" ] || usage "one engine at a time, got $ENGINE and $1"; ENGINE="$1"; shift ;;
   esac
 done
-[ -n "$ENGINE" ] || usage "no engine: godot, unity, unreal or web"
+[ -n "$ENGINE" ] || usage "no engine: godot, unity, unreal, web or bevy"
 ENG=$(printf '%s' "$ENGINE" | tr '[:upper:]' '[:lower:]')
 case "$ENG" in
-  godot|unity|unreal|web) ;;
-  *) usage "engine must be godot, unity, unreal or web (the engine.name values), got $ENGINE" ;;
+  godot|unity|unreal|web|bevy) ;;
+  *) usage "engine must be godot, unity, unreal, web or bevy (the engine.name values), got $ENGINE" ;;
 esac
 # A module or project name goes into paths and file text: letters, digits and _ only.
 for _n in "$MODULE_ARG" "$PROJECT_ARG"; do
@@ -147,6 +150,7 @@ case "$ENG" in
   unity) ENGNAME=Unity ;;
   unreal) ENGNAME=Unreal ;;
   web) ENGNAME=Web ;;
+  bevy) ENGNAME=Bevy ;;
 esac
 if [ -n "$VER" ]; then ENGTXT="$ENGNAME $VER"; else ENGTXT="$ENGNAME [version]"; fi
 # Web's engine.version is the bundler's (Vite for a new project).
@@ -175,6 +179,9 @@ list_paths() {
     unity) echo Assets/Tests/EditMode/EditModeTests.asmdef; echo Assets/Tests/PlayMode/PlayModeTests.asmdef ;;
     unreal) echo "$UNREAL_README" ;;
     web) echo tests/unit/.gitkeep; echo tests/integration/.gitkeep; echo playwright.config.ts ;;
+    # cargo compiles tests/<name>.rs at the top of tests/ only, so no folder
+    # under it is created; tests/README.md keeps tests/ in git.
+    bevy) ;;
   esac
   echo "$CI"
   echo "$SMOKE"
@@ -761,6 +768,124 @@ TPL_UNREAL_TESTS
 }
 
 
+tpl_readme_bevy() {
+  cat <<'TPL_README_BEVY'
+# Test Infrastructure
+
+**Engine**: @ENGINE@
+**Test Framework**: cargo test (libtest) with `#[cfg(test)]` modules
+**CI**: `.github/workflows/tests.yml`
+**Setup date**: @DATE@
+
+## Directory Layout
+
+Cargo compiles two kinds of test target, and nothing else:
+
+```
+src/               # #[cfg(test)] mod tests — unit tests beside the code they cover
+tests/             # one .rs file per integration test target: tests/combat.rs
+  smoke/           # Critical path test list for /smoke-check gate
+```
+
+> **A folder under `tests/` is not a test target.** `tests/unit/rules.rs` is
+> never compiled; cargo reads `tests/*.rs`, plus `tests/<dir>/main.rs`. Put
+> unit tests in the module they test, and integration tests in `tests/[system].rs`.
+
+```
+production/qa/
+  evidence/       # Screenshot logs and manual test sign-off records
+```
+
+> **Manual evidence lives under `production/qa/evidence/`, not `tests/`** — that
+> is where every consumer reads it.
+
+## Running Tests
+
+```bash
+cargo test                          # every test target in the crate
+cargo test --test combat            # one integration target
+cargo test --no-default-features --features default_app   # headless
+```
+
+The headless form is the one for a machine with no GPU: Bevy's `default_app`
+feature collection leaves out rendering, so a test that builds a `MinimalPlugins`
+app runs anywhere. `App::update()` steps an app once, `RunSystemOnce`
+(`World::run_system_once`) tests one system against a `World`, and
+`ScheduleRunnerPlugin::run_once()` runs a schedule with no window. A test that
+needs a real renderer needs a wgpu adapter; without one it fails for a reason
+that is not your game's.
+
+Exit 0: every test passed. Exit 101: a test failed **or** the crate did not
+compile — `cargo check --tests` first tells the two apart, which is what
+`studio/scripts/test-run.sh` does. Exit 126 or 127: cargo did not start. A crate
+whose test targets hold nothing prints `running 0 tests`, which is not a pass.
+
+## Test Naming
+
+Names follow the engine's language (`studio/rules/test-standards.md`):
+- **Bevy**: integration file `tests/[system].rs`, function `[scenario]_[expected]`
+  — `tests/combat.rs` → `fn base_attack_returns_expected_damage()`
+
+## Story Type → Test Evidence
+
+| Story Type | Required Evidence | Location |
+|---|---|---|
+| Logic | Automated unit test — must pass | `src/[module].rs` under `#[cfg(test)]` |
+| Integration | Integration test OR playtest doc | `tests/[system].rs` |
+| Visual/Feel | Screenshot + lead sign-off | `production/qa/evidence/` |
+| UI | Retained screenshot of each screen touched | `production/qa/evidence/` |
+| Config/Data | Smoke check pass | `production/qa/smoke-*.md` |
+
+## CI
+
+Tests run automatically on every push to `main` and on every pull request.
+A failed test suite blocks merging. CI installs Rust, the Linux libraries Bevy
+links against, and runs `cargo test`. Render tests need a Vulkan adapter, which
+a hosted runner does not have; either gate them behind a feature or run them
+with the software adapter (`mesa-vulkan-drivers`).
+TPL_README_BEVY
+}
+
+tpl_ci_bevy() {
+  cat <<'TPL_CI_BEVY'
+name: Automated Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Run cargo test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # The toolchain the crate needs: a rust-toolchain.toml, if the project has
+      # one, wins over this. Bevy 0.20's MSRV is 1.97.1.
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      # Bevy's Linux build links ALSA and udev; without them the build stops
+      # before any test compiles. mesa-vulkan-drivers gives wgpu a software
+      # Vulkan adapter, so a test that builds a renderer can still run.
+      - name: Install system libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev libudev-dev mesa-vulkan-drivers
+
+      # The crate's own test command. A project whose tests need a real GPU
+      # should gate them behind a feature and name the headless set here:
+      # cargo test --no-default-features --features default_app
+      - name: Run Tests
+        run: cargo test
+TPL_CI_BEVY
+}
+
 render() {
   sed -e "s|@ENGINE@|$ENGTXT|g" -e "s|@DATE@|$DATE|g" -e "s|@GODOTVER@|$GODOTVER|g" \
       -e "s|@MODULE@|$MODTXT|g" -e "s|@DOCPROJECT@|$DOCPROJ|g" -e "s|@CIPROJECT@|$CIPROJ|g"
@@ -769,9 +894,9 @@ render() {
 content_of() {
   case "$1" in
     "$README")
-      case "$ENG" in godot) tpl_readme_godot ;; unity) tpl_readme_unity ;; unreal) tpl_readme_unreal ;; web) tpl_readme_web ;; esac | render ;;
+      case "$ENG" in godot) tpl_readme_godot ;; unity) tpl_readme_unity ;; unreal) tpl_readme_unreal ;; web) tpl_readme_web ;; bevy) tpl_readme_bevy ;; esac | render ;;
     "$CI")
-      case "$ENG" in godot) tpl_ci_godot ;; unity) tpl_ci_unity ;; unreal) tpl_ci_unreal ;; web) tpl_ci_web ;; esac | render ;;
+      case "$ENG" in godot) tpl_ci_godot ;; unity) tpl_ci_unity ;; unreal) tpl_ci_unreal ;; web) tpl_ci_web ;; bevy) tpl_ci_bevy ;; esac | render ;;
     "$SMOKE") tpl_smoke ;;
     Assets/Tests/EditMode/EditModeTests.asmdef) tpl_asmdef_edit ;;
     Assets/Tests/PlayMode/PlayModeTests.asmdef) tpl_asmdef_play ;;

@@ -235,7 +235,7 @@ Using the GDD **already loaded in Phase 1** — do not re-read it — identify e
 | Multiplayer, sync, replication | `network-programmer` |
 | Audio cues, music triggers | `audio-director` |
 | Performance, draw calls, memory | `performance-analyst` |
-| Engine-specific patterns or APIs | Primary engine specialist (`<engine>-specialist` from `engine.name` — Godot→`godot-specialist`, Unity→`unity-specialist`, Unreal→`unreal-specialist`, Web→`lead-programmer`; fall back to the Primary line of `## Engine Specialists` in `technical-preferences.md`) |
+| Engine-specific patterns or APIs | Primary engine specialist (`<engine>-specialist` from `engine.name` — Godot→`godot-specialist`, Unity→`unity-specialist`, Unreal→`unreal-specialist`, Web→`lead-programmer`, Bevy→`lead-programmer` (no Bevy specialist agent; engine checks go against `docs/engine-reference/bevy/`); fall back to the Primary line of `## Engine Specialists` in `technical-preferences.md`) |
 | Acceptance criteria, test coverage | `qa-lead` |
 | Data schema, resource structure | `systems-designer` |
 | Any gameplay system | `game-designer` (always) |

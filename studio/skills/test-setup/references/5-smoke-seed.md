@@ -38,3 +38,16 @@ Create `tests/smoke/critical-paths.md`:
 ```
 
 ---
+
+The list is engine-agnostic — it is prose `/smoke-check` reads, and no command in
+it changes per engine. Two engine notes:
+
+- **Bevy** has no equivalent of Godot's `--quit-after`, so there is no default
+  `commands.smoke` to point at. Check 1 ("game launches to main menu without
+  crash") is the `cargo run` check on Bevy: say so in the list, and if the project
+  wired `bevy_dev_tools`' `ci_testing`, name the command it exposes here.
+- **Bevy's `commands.test`** is `cargo test`; `/smoke-check` runs it through
+  `studio/scripts/test-run.sh bevy`, which compiles the crate first. Nothing in
+  this file changes for that — it is `/smoke-check` Phase 2's business.
+
+---

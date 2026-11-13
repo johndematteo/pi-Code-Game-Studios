@@ -60,6 +60,10 @@ Names follow the engine's language (`studio/rules/test-standards.md`):
   — `FCombatBaseAttackTest` → `<Project>.Combat.BaseAttack`
   [`<Project>` is the root the filter in `commands.test` uses — write it out:
   the project name, or the distinct root `/setup-engine` chose]
+- **Bevy**: unit tests in a `#[cfg(test)] mod tests` beside the code, integration
+  tests in `tests/[system].rs`, function `[scenario]_[expected]` —
+  `tests/combat.rs` → `fn base_attack_returns_expected_damage()`
+  [no folder under `tests/`: cargo compiles `tests/*.rs` only]
 
 ## Story Type → Test Evidence
 
@@ -276,5 +280,42 @@ Each half exits 0 when every test passed and non-zero when one failed. A half
 with no test file exits 1: Vitest prints `No test files found` and Playwright
 `No tests found`. That is not a failing test and not a pass: report it as not
 assessed, no tests found.
+
+#### Bevy (`Engine: Bevy`)
+
+**Do not create a folder under `tests/`.** Cargo compiles `tests/*.rs` at the top
+of `tests/`, plus `tests/<dir>/main.rs`; `tests/unit/rules.rs` is never compiled
+and the run silently misses it. Unit tests go in a `#[cfg(test)] mod tests` beside
+the code under `src/`; integration tests are one file per target,
+`tests/<system>.rs`. `tests/README.md` says where each kind belongs.
+
+```bash
+bash studio/scripts/test-scaffold.sh bevy --dry-run   # Phase 2: the plan
+bash studio/scripts/test-scaffold.sh bevy             # after the approval
+```
+
+It creates `tests/README.md`, `production/qa/evidence/.gitkeep`,
+`.github/workflows/tests.yml` (Phase 4) and `tests/smoke/critical-paths.md`
+(Phase 5), and leaves every file that exists (`EXISTS`). No `tests/unit/` or
+`tests/integration/` is created — there is nothing for them to hold.
+
+The commands:
+
+```bash
+cargo test                                                 # every test target
+cargo test --test combat                                   # one integration target
+cargo test --no-default-features --features default_app    # headless, no GPU
+bash studio/scripts/test-run.sh bevy                       # compile check, then the tests
+```
+
+`test-run.sh bevy` runs `cargo check --tests` first: `cargo test` exits 101 for
+both a compile error and a failing test, and the check separates them
+(`bevy:check-failed` versus `bevy:failed`). A crate with no tests prints
+`test result: ok. 0 passed; 0 failed; …`, which is not a pass
+(`bevy:zero-tests`). Render tests need a real wgpu adapter; prefer
+`MinimalPlugins` for logic tests, or the headless feature set
+(`docs/engine-reference/bevy/modules/testing.md`).
+
+---
 
 ---

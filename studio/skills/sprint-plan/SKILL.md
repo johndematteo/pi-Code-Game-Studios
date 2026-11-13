@@ -178,14 +178,17 @@ story of its own.
    loop, a feature working end to end, a playtest) needs the scene or level it
    runs in and the setting that starts it: `run/main_scene` in `project.godot`,
    the scene list in Unity's `ProjectSettings/EditorBuildSettings.asset`, or
-   `GameDefaultMap` in Unreal's `Config/DefaultEngine.ini`. Add any file, scene
+   `GameDefaultMap` in Unreal's `Config/DefaultEngine.ini`; on Bevy the loop is
+   started by `cargo run`, so the "scene" is whatever the app's startup systems
+   spawn, and there is no settings file to point at. Add any file, scene
    or system that a picked story's acceptance criteria, notes or dependencies
    name and no picked story creates. A goal with nothing to run or show (logic
    and tests only) needs none.
 3. **Check each one.** It is covered when it exists in the project or a picked
    story builds it. Find scenes by the engine's scene files (`engine.name` in
    `project.yaml`): `*.tscn` for Godot, `Assets/**/*.unity` for Unity,
-   `Content/**/*.umap` for Unreal. Find anything else by the path or name the
+   `Content/**/*.umap` for Unreal, `assets/**/*.scn.ron` for Bevy when the
+   project uses it. Find anything else by the path or name the
    stories use. With no engine set, check by name only and say the scene search
    did not run.
 4. **Fill in the Goal Prerequisites section**: each need with `exists`,

@@ -21,7 +21,7 @@ nothing is indistinguishable from a check that passed.
 | `docs/registry/architecture.yaml` | All existing architectural stances (state ownership, interface contracts, forbidden patterns, performance budgets) — checked for conflicts before the design begins | Yes |
 | `docs/architecture/` (existing ADRs) | Scanned to determine the next sequential ADR number | Yes |
 | `design/gdd/[system].md` (GDDs relevant to the decision) | Specific rules, formulas, performance constraints, or integration points that motivate the decision | Yes |
-| `project.yaml` | `engine.name` — derives the primary specialist (`<engine>-specialist`) to spawn for validation (Step 5.5) | Yes |
+| `project.yaml` | `engine.name` — derives the primary specialist (`<engine>-specialist`) to spawn for validation (Step 5.5); **Web and Bevy have no specialist agent, so both resolve to `lead-programmer`** against their `docs/engine-reference/<engine>/` folder | Yes |
 | `studio/docs/technical-preferences.md` | `Engine Specialists` section — legacy fallback, used only when `engine.name` is absent or empty in `project.yaml` | Yes — required only when `engine.name` is absent |
 
 ### Preconditions

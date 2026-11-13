@@ -8,6 +8,82 @@ existing project on the older config files.
 
 ---
 
+## [1.4.0] — 2026-11-13
+
+**Bevy is a supported engine.** Say `/setup-engine bevy` and a Rust game on
+[Bevy](https://bevy.org/) is configured the same way the other four engines are:
+`engine.name`, the reference folder, the engine table row, the test scaffold and
+the CI workflow. This is an additive release — nothing you already have changes,
+and no migration step is needed.
+
+**Why it is worth reading before you write Bevy code.** Bevy is pre-1.0 and ships
+breaking API changes roughly every release, with no semver stability promise. A
+model whose training ends in May 2025 saw Bevy at about 0.16; 0.17 through 0.20
+all landed after that, and 0.20 renamed the buffered-event API (`Event` →
+`Message`, `EventWriter` → `MessageWriter`, `Trigger` → `On`, `Parent` →
+`ChildOf`). `docs/engine-reference/bevy/` says so, and `/setup-engine bevy`
+marks the engine HIGH RISK with a source-read policy rather than letting an agent
+answer from memory.
+
+### What you get
+
+- **`/setup-engine bevy`** records the crate's own version from `Cargo.toml` /
+  `Cargo.lock` — no pin is imposed, no toolchain is rewritten, and no file of an
+  existing crate is touched. It is instruct-only, like Unity and Unreal: a
+  `Cargo.toml` that already exists is the project.
+- **`docs/engine-reference/bevy/`** — `VERSION.md` (0.20.1, MSRV 1.97.1, the
+  feature-collection table), `breaking-changes.md`, `deprecated-apis.md`,
+  `current-best-practices.md`, `PLUGINS.md` (Avian, `leafwing-input-manager`,
+  `lightyear`, `bevy_kira_audio` and the ecosystem-lag warning), and
+  `modules/` for ECS, rendering, physics, input, audio, animation, UI, networking
+  and testing — including the headless recipe (`MinimalPlugins`, `App::update()`,
+  `RunSystemOnce`, the `default_app` feature set).
+- **`studio/engines/engines.tsv`** gains a `Bevy` row (`src`, `tests`, `assets`,
+  `cargo run` / `cargo build` / `cargo test`), and every script that switches on
+  an engine recognises it: `test-run.sh` (which compiles the crate first, so a
+  compile error is reported as `bevy:check-failed` rather than as a test
+  failure), `test-scaffold.sh` (a Rust CI workflow and a tests README that says
+  where cargo actually compiles tests), `asset-scan.sh` (orphan and missing-asset
+  checks against the Rust string literals that name assets), `content-count.sh`,
+  `write-guard.sh` and `project-coherence.sh` (which reads the `bevy` version the
+  project actually builds).
+- **No Bevy specialist agent.** Engine work on Bevy routes to `lead-programmer`
+  against `docs/engine-reference/bevy/`, exactly as Web does. One agent with the
+  reference folder beats three agents repeating it.
+- **`studio/scripts/engine-support.sh`** — a new observation-only helper that
+  asks each engine's row, validator, scripts and reference folder whether they
+  actually support the engine. Run it after adding or changing an engine; it
+  catches the missing `case` arm that would otherwise exit 3 silently.
+
+### Also changed
+
+- **`/test-flakiness` and `flaky-stats.sh` now read `cargo test` output.** Before
+  this, a Rust run reached the generic text parser, which sees the `FAILED` half
+  of a libtest line and never the `... ok` half — so every Rust test was reported
+  `always-fail` with **zero passes counted**, and the `test result:` summary line
+  was counted as a test of its own. `--format rust` (and automatic detection)
+  fixes that. The format was added, not changed: Godot's JUnit, Unity's NUnit,
+  Unreal's automation log and the plain-text formats parse exactly as before.
+- `studio/rules/` gains Bevy sections: `scene-files.md` (a Bevy "scene" is data,
+  not a level), `test-standards.md` (`cargo test`, and the warning that a folder
+  under `tests/` is never compiled), `shader-code.md` (WGSL, not GLSL or HLSL),
+  `engine-code.md` and `gameplay-code.md` (a `Local`-buffered system against a
+  per-run `Vec` allocation), `data-files.md` (serde field naming).
+- Beyond `/test-setup` and `/smoke-check`, the skills that act on an engine now
+  handle Bevy: `/dev-story` (`cargo check --tests` as the parse check),
+  `/test-flakiness`, `/test-evidence-review`, `/test-helpers`,
+  `/architecture-review`, `/code-review`, `/gate-check`, `/asset-audit`,
+  `/content-audit`, `/soak-test`, `/security-audit`, `/localize`,
+  `/reverse-document`, `/project-stage-detect`, `/bug-report`, `/sprint-plan`,
+  `/day-one-patch` and `/team-ui`. Each either names Bevy's paths and command or
+  says `NOT SOURCEABLE` where the reference tree does not settle the answer.
+- `studio/docs/` gains the Bevy paths an agent needs: `coding-standards.md` (the
+  CI job and its system packages), `run-and-observe.md` (a Bevy section, because
+  there is no screenshot flag — the API is `Screenshot::primary_window()` with a
+  `save_to_disk` observer, read from `bevy_render` 0.20.1 source and not yet run
+  on a windowed build), `rules-reference.md` and
+  `hooks-reference/pre-commit-code-quality.md`.
+
 ## [1.3.0] — 2026-11-09
 
 **"Make me a game" is the main road: `/prototype` asks a few questions, writes a

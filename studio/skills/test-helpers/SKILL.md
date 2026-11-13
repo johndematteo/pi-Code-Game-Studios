@@ -30,6 +30,7 @@ the only place its test runner compiles them (`studio/docs/directory-structure.m
 | Godot | `tests/helpers/` |
 | Unity | `Assets/Tests/EditMode/Helpers/` — inside the `EditModeTests` assembly `/test-setup` creates. If PlayMode tests need the same helpers, ask before creating `Assets/Tests/Helpers/TestHelpers.asmdef` and referencing it from both test assemblies. |
 | Unreal | `Source/<Module>/Private/Tests/Helpers/` |
+| Bevy | `tests/helpers.rs` (a cargo integration target) or a `#[cfg(test)]` module — **not** `tests/helpers/`, a folder cargo never compiles |
 
 `tests/helpers/` below means the helper root for the project's engine.
 
@@ -96,13 +97,20 @@ If the engine is not configured in either source: "Engine not configured. Run `/
 ## 3. Load Existing Test Patterns
 
 Scan the engine's test root for patterns already in use (Godot `tests/`, Unity
-`Assets/Tests/`, Unreal `Source/<Module>/Private/Tests/`):
+`Assets/Tests/`, Unreal `Source/<Module>/Private/Tests/`, Bevy `tests/*.rs` and
+`#[cfg(test)]` modules):
 
 ```
 Glob pattern="tests/**/*_test.*"                  (Godot)
 Glob pattern="Assets/Tests/**/*Tests.cs"          (Unity)
 Glob pattern="Source/*/Private/Tests/**/*.cpp"    (Unreal)
+Glob pattern="tests/*.rs"                         (Bevy — one level only)
+Glob pattern="src/**/*.rs"                        (Bevy — grep for #[cfg(test)])
 ```
+
+For Bevy, a subfolder under `tests/` is never compiled, so a helper there is
+never used. Put shared helpers in `tests/helpers.rs` and declare it from each
+target with `mod helpers;`, or keep them in a `#[cfg(test)]` module.
 
 For a representative sample (up to 5 files), read the test files and extract:
 - Setup patterns (how `before_each` / `setUp` / fixtures are written)

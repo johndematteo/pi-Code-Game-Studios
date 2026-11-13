@@ -21,7 +21,7 @@
 
 ## The code root is engine-specific
 
-**Two of the four supported engines will not build a project whose code sits in
+**Two of the five supported engines will not build a project whose code sits in
 `src/`.** This is not a style preference — it is a hard constraint of the engine's
 own toolchain:
 
@@ -31,6 +31,7 @@ own toolchain:
 | **Unity** | `Assets/` | Unity compiles **only** `Assets/` and `Packages/`. Code outside them is invisible to the compiler. |
 | **Unreal** | `Source/<Module>/` | UnrealBuildTool discovers modules under `Source/`; content lives in `Content/`. A module elsewhere is not built. |
 | **Web** | `src/` | No constraint — Vite builds what `index.html` imports. |
+| **Bevy** | `src/` | No constraint — Cargo builds the crate wherever `Cargo.toml` puts it; `assets/` is the `AssetServer` root, not the code root. |
 
 **Resolve the code root from `engine.name` before writing any source file.** A
 path shown as `src/…` alone is a Godot example: read it as *"the code root"* and
@@ -44,6 +45,7 @@ substitute the row above. `src/` is the table's Godot row, not a universal path.
 | **Unity** | `Assets/Tests/EditMode/`, `Assets/Tests/PlayMode/` | not compiled: "0 tests, Passed" |
 | **Unreal** | `Source/<Module>/Private/Tests/` | not built: "No automation tests matched" |
 | **Web** | `tests/unit/` (Vitest), `tests/integration/` (Playwright) | — |
+| **Bevy** | `tests/` (cargo integration tests), `src/` (`#[cfg(test)]` modules) | not compiled — a test outside the crate's targets never runs |
 
 The rows are the engine table, `studio/engines/engines.tsv`; `engine.code_root`
 and `engine.test_root` override them.

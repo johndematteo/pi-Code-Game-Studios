@@ -151,6 +151,7 @@ Hooks fail gracefully if optional tools are missing — you just lose validation
 | **Godot 4** | `Godot` | `src/` | GDScript, C# or GDExtension |
 | **Unity** | `Unity` | `Assets/` | Unity compiles only `Assets/` and `Packages/` |
 | **Unreal Engine 5** | `Unreal` | `Source/<Module>/` | C++ and Blueprints |
+| **Bevy** | `Bevy` | `src/` | Rust, ECS-first; `assets/` is the AssetServer root. No editor and no project file — the crate is the project. No Bevy specialist agent: engine work routes to `lead-programmer` against `docs/engine-reference/bevy/` |
 
 `/setup-engine` pins the engine version and writes its reference docs
 (`docs/engine-reference/<engine>/`). With no engine set, `/prototype` builds
@@ -240,7 +241,7 @@ studio/                             # The shared tree. One copy, not one per hos
 .cursor/                            # Cursor adapter: one rule, and a skills symlink
 prototypes/                         # One-shots, one folder each (isolated from src/)
 references/                         # Optional: images and sounds you like, for /prototype
-src/                                # Game source code (Godot, Web). The code root is
+src/                                # Game source code (Godot, Web, Bevy). The code root is
                                     #   ENGINE-SPECIFIC: Unity compiles only
                                     #   Assets/, Unreal builds from Source/<Module>/
 assets/                             # Art, audio, VFX, shaders, data files

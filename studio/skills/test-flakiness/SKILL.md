@@ -67,6 +67,12 @@ For Unreal projects: automation logs go to `Saved/Logs/`. Grep for
 `Test Completed. Result={<status>}`
 (`docs/engine-reference/unreal/current-best-practices.md`, "Command Line").
 
+For Bevy projects: `cargo test` writes to stdout and leaves no report file, so
+save each run yourself — `cargo test 2>&1 | tee test-results/run-$(date +%Y%m%d-%H%M%S).log`
+— and pass those files in run order. libtest prints one
+`test <id> ... ok` / `... FAILED` line per test, and the `test result:` summary
+line after them.
+
 ### Option B — Local log files
 
 If a path argument is provided, read that file directly.
@@ -106,6 +112,13 @@ reads):
   - Godot: `PASSED` / `FAILED` adjacent to test names
   - Unreal: `Result={Success}` / `Result={Fail}`
   - Unity: `Test passed` / `Test failed`
+
+**cargo test output (Bevy, Rust)**: `studio/scripts/flaky-stats.sh` reads this
+with `--format rust` (it also detects it automatically). Do not read it as plain
+text: a libtest line reads `test <id> ... ok`, and a text-marker parser sees only
+the `FAILED` half — every Rust test would then look like it always fails, with
+no pass counted. The bare names under `failures:`, the `---- <id> stdout ----`
+headers and the `test result:` summary are not results.
 
 Build a table: `test_id → [run1_result, run2_result, run3_result, ...]`
 
@@ -169,6 +182,12 @@ Skip mechanisms, by engine — name only the one for the project's engine:
 - **Unreal**: **NOT SOURCEABLE** — `docs/engine-reference/unreal/` documents no way
   to skip an automation test. Log it in the quarantine section and ask the user
   how their CI excludes a test; do not invent a flag.
+- **Bevy (Rust)**: `#[ignore = "flaky: [cause]"]` on the `#[test]` or
+  `#[tokio::test]` function. libtest reports the test as `... ignored`, which
+  `flaky-stats.sh --format rust` counts as a skip, not as a pass or a fail.
+  Cargo does not compile `tests/` subfolders, so a `tests/unit/` helper module
+  silently contributes nothing — check that the quarantined test is one that
+  actually runs before trusting its history.
 
 **Investigate and fix soon (Moderate):**
 > "This test is intermittently unreliable. Root cause appears to be [cause].

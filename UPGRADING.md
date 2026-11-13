@@ -20,6 +20,7 @@ of the template to the next.
 ## Table of Contents
 
 - [Upgrade Strategies](#upgrade-strategies)
+- [v1.3.0 → v1.4.0](#v130--v140)
 - [v1.2.0 → v1.3.0](#v120--v130)
 - [v1.1.3 → v1.2.0](#v113--v120)
 - [v1.1.2 → v1.1.3](#v112--v113)
@@ -173,6 +174,75 @@ Best when: you didn't use git to set up the template (just downloaded a zip).
    file the list marks as yours, such as `.claude/docs/technical-preferences.md`.
 3. For files under **"Merge carefully"**, open both versions side-by-side
    and manually merge the structural changes while keeping your content.
+
+---
+
+## v1.3.0 → v1.4.0
+
+**Additive: Bevy is a supported engine.** Nothing you already have changes, and
+no file you wrote needs editing. If you are not using Bevy, this release costs you
+one new folder and one new script.
+
+### What Changed
+
+- **`studio/engines/engines.tsv`** gains a `Bevy` row, and the config validator
+  accepts `engine.name: Bevy`. If you keep your own copy of that table, add the
+  row: `Bevy\tsrc\ttests\tassets\tcargo run\tcargo build\tcargo test\t-`
+- **`docs/engine-reference/bevy/`** is new.
+- **`studio/scripts/engine-support.sh`** is new: an observation-only helper that
+  reports whether each engine in the table is actually wired through the scripts,
+  the validator and the reference folder.
+- **The scripts that switch on an engine** (`write-guard.sh`, `asset-scan.sh`,
+  `content-count.sh`, `test-run.sh`, `test-scaffold.sh`, `project-coherence.sh`)
+  gained a `Bevy` arm, and `yaml-helper.sh` resolves `engine.name: Bevy` to
+  `lead-programmer` (there is no Bevy specialist agent).
+- **`studio/rules/`** gained Bevy sections in `scene-files.md`,
+  `test-standards.md` and `shader-code.md`.
+- **`/setup-engine`, `/test-setup`, `/smoke-check`, `/dev-story`,
+  `/project-settings`** and the five skills that name an engine's primary
+  specialist gained Bevy.
+
+### Files: Safe to Overwrite
+
+```
+docs/engine-reference/bevy/                 ← new
+studio/engines/engines.tsv                  ← the new row; keep yours if you
+                                               added engines of your own
+studio/scripts/engine-support.sh            ← new
+studio/scripts/flaky-stats.sh               ← the rust format is new; the other
+                                               formats parse as before
+studio/rules/engine-code.md                 ← the Bevy example; keep yours if you
+studio/rules/gameplay-code.md                  edited these rules
+studio/rules/scene-files.md
+studio/rules/test-standards.md
+studio/rules/shader-code.md
+studio/rules/data-files.md
+studio/skills/setup-engine/references/bevy.md   ← new
+```
+
+With Strategy A2, also check out what this release changes outside `.claude`:
+`git checkout template/main -- studio/engines/engines.tsv studio/scripts/engine-support.sh studio/scripts/flaky-stats.sh studio/rules docs/engine-reference/bevy studio/skills/setup-engine/references/bevy.md studio/docs docs/WORKFLOW-GUIDE.md README.md AGENTS.md`.
+
+### Files: Merge Carefully
+
+- **`studio/skills/setup-engine/references/2-guided-mode.md`,
+  `3-version.md`, `4-claude-md-stack.md`, `5-technical-preferences.md`,
+  `5.5-project-yaml.md`, `6-knowledge-gap.md`, `7-reference-docs.md` and
+  `7.5-scaffold.md`** — each gained a Bevy branch. If you edited any of them for
+  your own engine, merge rather than overwrite.
+- **`AGENTS.md`** — the `[CHOOSE: …]` line now names Bevy, and the engine-specialist
+  note says Web and Bevy route to `lead-programmer`. If your project has an engine
+  set, keep your Technology Stack lines and only take the note.
+- **The skills that act on an engine** — `/test-flakiness`, `/test-evidence-review`,
+  `/test-helpers`, `/architecture-review`, `/code-review`, `/gate-check`,
+  `/asset-audit`, `/content-audit`, `/soak-test`, `/security-audit`, `/localize`,
+  `/reverse-document`, `/project-stage-detect`, `/bug-report`, `/sprint-plan`,
+  `/day-one-patch`, `/team-ui` and `/dev-story`'s `CONTRACT.md` each gained a
+  Bevy branch or a `NOT SOURCEABLE` note. If you tuned any of these for your own
+  engine, merge rather than overwrite.
+- **`studio/docs/coding-standards.md`, `run-and-observe.md`, `rules-reference.md`
+  and `hooks-reference/pre-commit-code-quality.md`** — engine lists and paths.
+  Keep your own additions and add the Bevy lines.
 
 ---
 

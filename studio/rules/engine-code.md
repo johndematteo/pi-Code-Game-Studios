@@ -53,10 +53,40 @@ void UProximityComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 }
 ```
 
+Bevy:
+
+```rust
+// A Local keeps the scratch buffer across runs; clear() keeps its capacity
+fn proximity(
+    mut nearby: Local<Vec<Entity>>,
+    grid: Res<SpatialGrid>,
+    player: Single<&Transform, With<Player>>,
+) {
+    nearby.clear();
+    grid.query_radius(player.translation, RADIUS, &mut nearby);
+}
+```
+
 **Incorrect** (allocating in hot path):
 
 ```gdscript
 func _physics_process(delta: float) -> void:
     var nearby: Array[Node3D] = []  # VIOLATION: allocates every frame
     nearby = get_tree().get_nodes_in_group("enemies")  # VIOLATION: tree query every frame
+```
+
+Bevy:
+
+```rust
+// VIOLATION: a fresh Vec every run, and a query over every entity to filter
+fn proximity(
+    enemies: Query<(&Transform, &Enemy)>,
+    player: Single<&Transform, With<Player>>,
+) {
+    let nearby: Vec<Entity> = enemies
+        .iter()
+        .filter(|(t, _)| t.translation.distance(player.translation) < RADIUS)
+        .map(|_| Entity::PLACEHOLDER)
+        .collect();
+}
 ```

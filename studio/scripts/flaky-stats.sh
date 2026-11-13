@@ -18,7 +18,8 @@
 #               reports/ and Saved/Logs/ named *.xml, *.log or *.txt, sorted by
 #               path: pass the files yourself when their names do not sort in
 #               run order
-#   --format F  auto (default: found per file), junit, nunit, unreal or text
+#   --format F  auto (default: found per file), junit, nunit, unreal, rust or
+#               text
 #   --runs      also print one RUN row per file
 #   --all       also list tests with no fail and no skip (default: only tests
 #               with at least one fail or skip are listed; the rest are counted)
@@ -42,6 +43,14 @@
 #           leading ISO timestamp, ANSI colour codes, timing words like 12ms or
 #           (0.5s), and the punctuation [](): > | * - , around it. A line with
 #           more than one marker (a summary) is not a result
+#   rust    cargo test's libtest output: "test <id> ... ok" is a pass, "...
+#           FAILED" a fail, "... ignored" a skip, any other word after the
+#           dots a skip listed as `unrecognised`. The bare names under
+#           "failures:", the "---- <id> stdout ----" headers and the
+#           "test result:" summary carry no "... ", so they are not results.
+#           Without this format libtest lines reach `text`, which sees only
+#           FAILED and never the "... ok" line: every Rust test would read as
+#           always-fail with no pass counted
 # CDATA sections and comments are skipped, XML entities in ids are decoded, a
 # tag may run over several lines.
 #
@@ -109,8 +118,8 @@ while [ $# -gt 0 ]; do
   esac
 done
 case "$FORMAT" in
-  auto|junit|nunit|unreal|text) ;;
-  *) echo "flaky-stats: --format takes auto, junit, nunit, unreal or text, got $FORMAT" >&2; exit 2 ;;
+  auto|junit|nunit|unreal|rust|text) ;;
+  *) echo "flaky-stats: --format takes auto, junit, nunit, unreal, rust or text, got $FORMAT" >&2; exit 2 ;;
 esac
 
 if [ -n "$ROOT_ARG" ]; then
@@ -163,15 +172,18 @@ printf '%s\n' "$FILES" | FORMAT="$FORMAT" SHOWRUNS="$SHOWRUNS" ALL="$ALL" awk '
   }
   # The format of one file: NUnit if any <test-case, else JUnit if any
   # <testcase, else Unreal if any "Test Completed. Result={", else text.
-  function detect(f,    l, nu, ju, un) {
-    nu = 0; ju = 0; un = 0
+  function detect(f,    l, nu, ju, un, ru) {
+    nu = 0; ju = 0; un = 0; ru = 0
     while ((getline l < f) > 0) {
       if (index(l, "<test-case") > 0) nu = 1
       else if (index(l, "<testcase") > 0) ju = 1
       if (index(l, "Test Completed. Result={") > 0) un = 1
+      # the libtest line shape; matched anywhere so a leading ANSI colour
+      # code or a "Running unittests" prefix cannot hide it
+      if (index(l, " ... ok") > 0 || index(l, " ... FAILED") > 0) ru = 1
     }
     close(f)
-    return nu ? "nunit" : (ju ? "junit" : (un ? "unreal" : "text"))
+    return nu ? "nunit" : (ju ? "junit" : (un ? "unreal" : (ru ? "rust" : "text")))
   }
   function trim(s) { sub(/^[ \t]+/, "", s); sub(/[ \t]+$/, "", s); return s }
   # XML entities in an id; &amp; last so &amp;lt; stays &lt;.
@@ -316,6 +328,22 @@ printf '%s\n' "$FILES" | FORMAT="$FORMAT" SHOWRUNS="$SHOWRUNS" ALL="$ALL" awk '
     while (out != "" && index(" []():>|*-,", substr(out, length(out), 1)) > 0) out = substr(out, 1, length(out) - 1)
     record(out, code)
   }
+  # libtest, from cargo test. "test <id> ... ok" is a pass, "... FAILED" a
+  # fail, "... ignored" a skip. Anything else after the dots is a skip and is
+  # named in `unrecognised`, so a word this script does not know is visible
+  # rather than counted as a pass.
+  function rust_line(s,    p, st, id) {
+    gsub(/\033\[[0-9;]*m/, "", s)
+    if (substr(s, 1, 5) != "test ") return
+    p = index(s, " ... ")
+    if (p == 0) return
+    id = trim(substr(s, 6, p - 6))
+    st = trim(substr(s, p + 5))
+    if (st == "ok") record(id, "P")
+    else if (st == "FAILED") record(id, "F")
+    else if (st == "ignored") record(id, "S")
+    else { record(id, "S"); unrec("rust", st) }
+  }
   function endfile() {
     if (jopen) { record(jid, jcode); jopen = 0 }
   }
@@ -357,6 +385,7 @@ printf '%s\n' "$FILES" | FORMAT="$FORMAT" SHOWRUNS="$SHOWRUNS" ALL="$ALL" awk '
     line = $0; sub(/\r$/, "", line)
     if (cf == "nunit" || cf == "junit") xml_line(line)
     else if (cf == "unreal") unreal_line(line)
+    else if (cf == "rust") rust_line(line)
     else text_line(line)
   }
   END {

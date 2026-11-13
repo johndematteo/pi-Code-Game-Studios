@@ -15,6 +15,7 @@ code. This file is the procedure for applying it.
 | Unity | `Assets/` | Unity compiles **only** `Assets/` and `Packages/` |
 | Unreal | `Source/<Module>/` | UnrealBuildTool discovers modules under `Source/`; content lives in `Content/` |
 | Web | `src/` | No constraint; Vite builds from what `index.html` imports |
+| Bevy | `src/` | No constraint; Cargo builds the crate wherever `Cargo.toml` puts it. `assets/` is the `AssetServer` root, not the code root |
 
 The hooks and helpers read these from the engine table, `studio/engines/engines.tsv`;
 a skill reads the row with `resolve_config --keys engine_row`.

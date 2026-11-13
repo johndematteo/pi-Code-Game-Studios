@@ -35,7 +35,10 @@ gitignore-style and case-insensitively (observed; the docs do not say), so
 the Unity and Unreal code globs below name their file types.
 
 Paths are listed Godot · Unity · Unreal. Folder names are shown in one case;
-each rule's own globs list the case variants (`{AI,Ai,ai}`).
+each rule's own globs list the case variants (`{AI,Ai,ai}`). **Bevy shares
+Godot's `src/` layout**, so the code rules below load on a Bevy project through
+the same `src/**` globs; its own file types are called out in the rows that
+have any (`*.rs` tests, `*.wgsl` shaders, `*.scn.ron` scenes).
 
 | Rule File | Path Pattern | Enforces |
 | ---- | ---- | ---- |
@@ -47,10 +50,10 @@ each rule's own globs list the case variants (`{AI,Ai,ai}`).
 | `design-docs.md` | `design/gdd/**` | Required sections per `modes.workflow` (8 at `full`, 5 at `standard`), formula format, edge cases |
 | `narrative.md` | `design/narrative/**` | Lore consistency, character voice, canon levels |
 | `data-files.md` | `assets/data/**/*.json` · `Assets/**/Data/**/*.json` · `Content/**/Data/**/*.json` | JSON validity, naming conventions, schema rules |
-| `test-standards.md` | `tests/**` · `Assets/Tests/**/*.cs` · `Source/**/Tests/**/*.{h,cpp}` | Test naming, coverage requirements, fixture patterns |
+| `test-standards.md` | `tests/**` · `Assets/Tests/**/*.cs` · `Source/**/Tests/**/*.{h,cpp}` | Test naming, coverage requirements, fixture patterns. **On Bevy, `tests/*.rs` only** — a file in a subfolder under `tests/` is never compiled, so a nested glob would match tests that do not run |
 | `prototype-code.md` | `prototypes/**` | One-shot browser games (values in `config.js`, seeded randomness, plays offline) and throwaway engine or paper prototypes (relaxed standards, README, hypothesis documented) |
-| `shader-code.md` | `assets/shaders/**`, `**/*.gdshader` · `Assets/**/*.{shader,hlsl,cginc,compute,shadergraph}` · `Shaders/**`, `**/*.{usf,ush}` | Naming conventions, performance targets, cross-platform rules |
-| `scene-files.md` | `**/*.tscn`, `**/*.tres` · `**/*.unity`, `**/*.prefab`, `Assets/**/*.asset` · — | Hand-edit limits for editor-written scene and asset files; Unreal `.uasset`/`.umap` are binary, and `settings.json` denies edits to them |
+| `shader-code.md` | `assets/shaders/**`, `**/*.gdshader` · `Assets/**/*.{shader,hlsl,cginc,compute,shadergraph}` · `Shaders/**`, `**/*.{usf,ush}` | Naming conventions, performance targets, cross-platform rules. Bevy shaders are `**/*.wgsl` |
+| `scene-files.md` | `**/*.tscn`, `**/*.tres` · `**/*.unity`, `**/*.prefab`, `Assets/**/*.asset` · — | Hand-edit limits for editor-written scene and asset files; Unreal `.uasset`/`.umap` are binary, and `settings.json` denies edits to them. Bevy's `**/*.scn.ron` is a scene only when the project uses it — a Bevy scene is data, not a level |
 | `agent-memory.md` | `.claude/agent-memory/**` | The one place an agent may write unasked — and why a temporary absence must never be recorded as a durable fact |
 | `skill-authoring.md` | `studio/skills/**`, `studio/agents/**` | A check must be able to report that it did not run — the five obligations for verdicts, defaults, skips, sourcing and derived coverage |
 

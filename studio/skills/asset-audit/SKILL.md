@@ -74,9 +74,9 @@ Asset Standards section sets budgets, formats and the naming convention.
 ## Phase 2: Scan Asset Directories
 
 Assets live under the engine's asset root: `assets/` on Godot, `Assets/` on
-Unity, `Content/` on Unreal. Resolve the engine and its code root per
-`studio/docs/code-root-resolution.md`; that code root is the one Phase 3's
-orphan and missing-asset searches read. If it is unresolved, stop:
+Unity, `Content/` on Unreal, `assets/` on Bevy. Resolve the engine and its code
+root per `studio/docs/code-root-resolution.md`; that code root is the one Phase
+3's orphan and missing-asset searches read. If it is unresolved, stop:
 `NOT ASSESSED — engine unresolved`, naming `/setup-engine`.
 
 Scan the asset root using Glob:
@@ -85,6 +85,9 @@ Scan the asset root using Glob:
   `assets/shaders/**/*`, `assets/data/**/*`
 - **Unity** — `Assets/**/*`, leaving out scripts (`*.cs`, `*.asmdef`) and `*.meta` files
 - **Unreal** — `Content/**/*.uasset` and `Content/**/*.umap`
+- **Bevy** — `assets/**/*`, leaving out `.meta` files; a Bevy asset is any file
+  loaded by path, so `assets/**/*` is the whole root and there are no importer
+  sidecars to exclude
 
 The files matched are `Total assets scanned`. If there are none, the checks on
 scanned files — Naming, Size, Format, Orphaned — are

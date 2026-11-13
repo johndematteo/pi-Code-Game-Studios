@@ -3,7 +3,7 @@
 ## Trigger
 
 Runs before any commit that modifies files under the code root — `src/`
-(Godot, Web), `Assets/` (Unity) or `Source/` (Unreal); see
+(Godot, Web, Bevy), `Assets/` (Unity) or `Source/` (Unreal); see
 `studio/docs/code-root-resolution.md`.
 
 ## Purpose

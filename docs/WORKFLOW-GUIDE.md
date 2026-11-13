@@ -106,7 +106,7 @@ OPTIONAL opportunities.
 Directories are created as needed. The system expects this layout:
 
 ```
-src/                  # Game source code (Godot; Unity: Assets/, Unreal: Source/<Module>/)
+src/                  # Game source code (Godot, Web, Bevy; Unity: Assets/, Unreal: Source/<Module>/)
   core/               # Engine/framework code
   gameplay/           # Gameplay systems
   ai/                 # AI systems
@@ -165,7 +165,7 @@ The main path starts with a game, not an engine:
    Stories (`/create-stories`, then `/dev-story` and `/story-done`) only when you
    ask for them, or in studio mode. `/next-step` knows this route
 
-`/setup-engine` is for an engine other than web (Godot, Unity, Unreal), or for later;
+`/setup-engine` is for an engine other than web (Godot, Unity, Unreal, Bevy), or for later;
 with an engine set, `/prototype` builds a throwaway prototype in it instead.
 `/prototype --spike` is the quick test of one mechanic. `/brainstorm` helps when you
 have no idea yet.
@@ -288,7 +288,9 @@ Or with a specific engine:
 **Why this matters:** Once you set the engine, the system knows which
 engine-specialist agents to use. If you pick Godot, agents like
 `godot-specialist`, `godot-gdscript-specialist`, and `godot-shader-specialist`
-become your go-to experts.
+become your go-to experts. Web and Bevy have no engine-specialist agent: engine
+work on those goes to `lead-programmer`, against `docs/engine-reference/web/` or
+`docs/engine-reference/bevy/`.
 
 ### Step 1.4: Decompose Your Concept Into Systems
 

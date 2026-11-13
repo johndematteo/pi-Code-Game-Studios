@@ -244,6 +244,20 @@ case "$ENGINE_LC" in
       [ -n "$WV" ] && PROBE="$WV (node_modules/$WEB_BPKG/package.json)"
     fi
     ;;
+  bevy)
+    # The Bevy version the project actually builds. `cargo --version` is the
+    # toolchain, not the engine, so it is never the probe. Cargo.lock's resolved
+    # `bevy` package is what a build links; Cargo.toml's dependency line is the
+    # fallback when the project has no lock file yet.
+    if [ -f Cargo.lock ]; then
+      BLV="$(awk '/^name = "bevy"$/ { getline; if ($0 ~ /^version = /) { v = $3; gsub(/[",]/, "", v); print v; exit } }' Cargo.lock 2>/dev/null | head -1)"
+      [ -n "$BLV" ] && PROBE="$BLV (Cargo.lock)"
+    fi
+    if [ -z "$PROBE" ] && [ -f Cargo.toml ]; then
+      BTV="$(grep -E '^[[:space:]]*bevy[[:space:]]*=' Cargo.toml 2>/dev/null | head -1 | sed -E 's/.*=[[:space:]]*"([^"]*)".*/\1/')"
+      case "$BTV" in ''|*'='*) ;; *) PROBE="$BTV (Cargo.toml)" ;; esac
+    fi
+    ;;
 esac
 
 if [ -z "$PROBE" ]; then
@@ -259,6 +273,8 @@ if [ -z "$PROBE" ]; then
     fi
   elif [ "$ENGINE_LC" = "unreal" ]; then
     skipped "declared version vs installed engine — no readable Engine/Build/Build.version under engine.path, the editor in commands.test, the launcher folder for the .uproject's EngineAssociation, or UnrealEditor-Cmd on PATH. A probe that could not run has not established absence."
+  elif [ "$ENGINE_LC" = "bevy" ]; then
+    skipped "declared version vs the crate actually built — no Cargo.lock naming a bevy package and no `bevy =` line in Cargo.toml. A probe that could not run has not established absence."
   else
     skipped "declared version vs installed binary — no $ENGINE binary found on PATH. A probe that could not run has not established absence."
   fi

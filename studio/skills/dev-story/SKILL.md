@@ -147,10 +147,12 @@ from a GDScript one, which `engine.name` cannot), plus `shader` when the story
 touches shaders or materials and `ui` for a UI story; `primary` (the generic engine
 specialist) when `code` is `unset`. Name no specialist from memory: the line is the project's
 choice. Every value `unset` and no `primary`: say "No engine specialist configured"
-and go on without one. On Web there is no engine specialist: `primary` is
+and go on without one. On Web or Bevy there is no engine specialist: `primary` is
 `lead-programmer`, and the engine check below goes to it, against
-`docs/engine-reference/web/`. Say so in one line ("Web: engine check by
-lead-programmer against docs/engine-reference/web/").
+`docs/engine-reference/web/` or `docs/engine-reference/bevy/`. Say so in one line
+("Web: engine check by lead-programmer against docs/engine-reference/web/", or
+the same for Bevy). On Bevy the check is `cargo check --tests`, and Bevy is
+HIGH RISK: the specialist reads the reference folder before naming any Bevy API.
 
 ## Phase 5: Hand out the work
 

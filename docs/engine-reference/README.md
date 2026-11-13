@@ -8,16 +8,18 @@ has a cutoff date** and game engines update frequently.
 
 Claude's training data has a knowledge cutoff (May 2025 is the floor; a newer
 model may know more). Game engines
-like Godot, Unity, and Unreal, and the web toolchain (Vite, TypeScript and the
-game libraries), ship updates that introduce breaking API changes,
+like Godot, Unity, Unreal and Bevy, and the web toolchain (Vite, TypeScript and
+the game libraries), ship updates that introduce breaking API changes,
 new features, and deprecated patterns. Without these reference files, agents will
 suggest outdated code.
 
 ## Structure
 
-Each engine gets its own directory: `godot/`, `unity/`, `unreal/` and `web/`,
-named as `engine.name` in lower case. The web folder pins a toolchain rather
-than one engine, and has a page per library instead of `modules/`:
+Each engine gets its own directory: `godot/`, `unity/`, `unreal/`, `web/` and
+`bevy/`, named as `engine.name` in lower case. The web folder pins a toolchain
+rather than one engine, and has a page per library instead of `modules/`. The
+bevy folder pins a Rust crate and names its community crates in `PLUGINS.md`,
+because a Bevy project's dependency list *is* its plugin list.
 
 ```
 <engine>/
@@ -25,7 +27,7 @@ than one engine, and has a page per library instead of `modules/`:
 ├── breaking-changes.md     # API changes between versions, organized by risk level
 ├── deprecated-apis.md      # "Don't use X → Use Y" lookup tables
 ├── current-best-practices.md  # New practices not in model training data
-├── PLUGINS.md              # Unity and Unreal only: index of the plugin pages
+├── PLUGINS.md              # Unity, Unreal and Bevy: index of the plugin pages
 ├── plugins/                # Unity and Unreal only: one page per plugin
 │   └── ...
 └── modules/                # Per-subsystem quick references, one subsystem per file
@@ -42,6 +44,10 @@ Engine-specialist agents are instructed to:
 2. Check `deprecated-apis.md` before suggesting any engine API
 3. Consult `breaking-changes.md` for version-specific concerns
 4. Read relevant `modules/*.md` for subsystem-specific work
+
+**Web and Bevy have no engine-specialist agent** — engine work on those routes to
+`lead-programmer` against their folder here, which makes reading this directory
+the whole of the version discipline rather than a supporting step.
 
 ## Maintenance
 

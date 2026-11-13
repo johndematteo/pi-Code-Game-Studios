@@ -4,6 +4,7 @@ paths:
   - "**/*.tres"
   - "**/*.unity"
   - "**/*.prefab"
+  - "**/*.scn.ron"
   - "Assets/**/*.asset"
 ---
 
@@ -39,3 +40,29 @@ When you edit the text by hand:
 - With no Editor reachable, keep every `fileID` and `guid` reference intact,
   never invent a GUID, never edit or delete a `.meta` file, and open the scene
   in the Editor afterwards to confirm it loads.
+
+## Bevy (`.scn.ron`, `assets/`, `Cargo.toml`)
+
+Bevy has no editor: a scene is data a program reads, and most Bevy projects build
+scenes in Rust code rather than in a file. Two different mechanisms exist and are
+often confused — a serialised world (`.scn.ron`, the `scene` feature) and a BSN
+scene template (`Template`/`FromTemplate`, added in 0.20). Do not mix them in one
+example; check `docs/engine-reference/bevy/modules/ecs.md` before writing either.
+
+- **Never hand-write a `.scn.ron` that a program could produce.** Serialise the
+  world and commit the result; a hand edit that drops a component type changes
+  what spawns, usually without an error.
+- **Never hand-edit a `.meta` file.** The asset processor writes one beside each
+  asset under `assets/`. It is not an asset; an asset scan excludes it.
+- **`assets/` is the `AssetServer` root.** A load path is relative to it, so
+  `asset_server.load("textures/player.png")` resolves to
+  `assets/textures/player.png`. Moving a file means changing every string that
+  names it — there is no reference graph to repair for you.
+- **Never edit `Cargo.lock` by hand.** Change the version in `Cargo.toml` and let
+  cargo resolve it. A hand-edited lock file is a checksum mismatch waiting to
+  happen.
+- **A scene is not a level.** Bevy has no level file: a level is whatever a
+  system spawns. Look for the spawn code, not for a `.scn.ron`, before concluding
+  a level is missing.
+- **After changing a component or resource type**, run `cargo check --tests`. A
+  serialised scene that names a removed type fails at load, not at compile.

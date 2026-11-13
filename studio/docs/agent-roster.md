@@ -65,6 +65,11 @@ session's model.
 | `unity-specialist` | Unity | MonoBehaviour vs DOTS, Addressables, URP/HDRP, Unity optimization |
 | `godot-specialist` | Godot 4 | GDScript patterns, node/scene architecture, signals, Godot optimization |
 
+**Web and Bevy have no engine lead.** Engine work on those goes to
+`lead-programmer`, against `docs/engine-reference/web/` or
+`docs/engine-reference/bevy/` — which is why those folders carry the version
+policy, the deprecated-API tables and the per-subsystem pages in full.
+
 ### Unreal Engine Sub-Specialists
 
 | Agent | Subsystem | When to Use |

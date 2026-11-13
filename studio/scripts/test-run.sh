@@ -13,13 +13,13 @@
 # /smoke-check, which also decides what an unmatched exit code means.
 #
 # Usage: bash studio/scripts/test-run.sh <engine> [options]
-#   <engine>            godot, unity, unreal or web (any case)
+#   <engine>            godot, unity, unreal, web or bevy (any case)
 #   --cmd COMMAND       the test command to run, instead of project.yaml's
 #                       commands.test or the engine's default
 #   --exe PATH          the editor executable (default: the one commands.test
 #                       names, for godot only when its name says godot, else
-#                       engine.path, else godot / Unity on PATH); for unreal,
-#                       the UE root
+#                       engine.path, else godot / Unity / cargo on PATH); for
+#                       unreal, the UE root; for bevy, the cargo executable
 #   --platform P        unity only: editmode (default) or playmode
 #   --timeout SECONDS   default 900; 1800 for unreal
 #   --os windows|linux|macos
@@ -30,11 +30,12 @@
 #                       tests/unit/ runs Vitest on it alone, one under
 #                       tests/integration/ runs Playwright on it alone, and an
 #                       @tag runs Playwright's tests with that tag
-#   --no-build          unreal only: skip the build that comes first
+#   --no-build          unreal and bevy only: skip the build (unreal) or the
+#                       compile check (bevy) that comes first
 #   --tool T            force the timeout tool: timeout, gtimeout, perl or none (the
 #                       tests use this to reach the perl and no-tool paths)
 #   --log FILE          keep the runner's output here (default: a temp file); the
-#                       import's or the build's output goes to FILE.pre
+#                       import's, the build's or the check's output goes to FILE.pre
 #   --dry-run           print what would run; run nothing
 #   --root DIR          the project; defaults to the repo this script is in
 #   -h, --help          this text
@@ -51,11 +52,14 @@
 # checks Packages/manifest.json names com.unity.test-framework and deletes the
 # old results file; unreal builds the editor target first (it needs the UE root),
 # and a build that fails or times out runs no test, because the tests would run
-# against the last good binaries or not load at all. A check that fails runs
-# nothing and prints why. The import and the build each have a row saying what
-# runs, or why it does not, and their output goes to its own log (pre_log), so
-# nothing they print is read as the tests' output. web has no step before the
-# tests. When its test command is the engine table's (npm test, from
+# against the last good binaries or not load at all. bevy runs `cargo check
+# --tests` first: cargo test's own exit 101 covers both a compile error and a
+# failing test, and the check separates them, so a crate that does not build
+# reports bevy:check-failed instead of a test failure. A check that fails runs
+# nothing and prints why. The import, the build and the check each have a row
+# saying what runs, or why it does not, and their output goes to its own log
+# (pre_log), so nothing they print is read as the tests' output. web has no step
+# before the tests. When its test command is the engine table's (npm test, from
 # commands.test or by default) and package.json has the web scaffold's
 # test:unit (Vitest) and test:e2e (Playwright) scripts, the two halves run one
 # after the other, whatever the first did, each under the timeout, and each is
@@ -70,25 +74,30 @@
 # (or npm's placeholder, "no test specified") runs nothing: web:no-test-script.
 #
 # Output: TSV, in this order (a row that cannot apply is left out).
-#   engine      <Godot|Unity|Unreal|Web>
+#   engine      <Godot|Unity|Unreal|Web|Bevy>
 #   exe         <path|->  <commands.test|engine.path|path|--exe|->
 #   command     <--cmd|commands.test|default>  <the command>
 #   import      <command> | - <skipped: why>                godot, before the tests
 #   build       <command> | - <skipped: why>                unreal, before the tests
+#   check       <command> | - <skipped: why>                bevy, before the tests
+#                                                           (skipped when the test command is the
+#                                                           project's own: its feature set is not
+#                                                           second-guessed)
 #   timeout     <seconds>  <timeout|gtimeout|perl|none>
 #   runner      <vitest,jest,playwright|other>  <read from>   web, any other command
 #   precheck    <what>  <present|absent>
-#   import_exit, build_exit   <code>                        when it ran
-#   import_timed_out, build_timed_out   <yes|no>            when it ran
+#   import_exit, build_exit, check_exit   <code>             when it ran
+#   import_timed_out, build_timed_out, check_timed_out   <yes|no>  when it ran
 #   ran         <yes|no>  <why not, or ->
 #   exit        <code of the test command>
 #   timed_out   <yes|no>
 #   results_file  <path>  <present|absent>                  unity
-#   zero_tests  <yes|no|unknown>  <the marker line, or ->   godot, unity, unreal, web halves
+#   zero_tests  <yes|no|unknown>  <the marker line, or ->   godot, unity, unreal, bevy, web halves
 #                                                           (yes when either half found none);
 #                                                           web by exit code (runner other): `unknown`
 #   tests       total=<n> passed=<n> failed=<n>             unity (the <test-run> element),
-#                                                           unreal (Result={...} lines), web
+#                                                           unreal (Result={...} lines), bevy
+#                                                           (the libtest summary), web
 #                                                           halves (summed);
 #                                                           godot: `-  not sourced`
 #   web halves, before the run:
@@ -108,7 +117,9 @@
 # unity:no-test-framework, unity:0, unity:zero-tests, unity:no-count,
 # unity:no-results, unity:2, unity:1, unity:3, unity:4, unity:other,
 # unreal:mac-unsourced, unreal:build-failed, unreal:result-fail,
-# unreal:no-tests-matched, unreal:pass, unreal:other-nonzero, web:0, web:nonzero,
+# unreal:no-tests-matched, unreal:pass, unreal:other-nonzero,
+# bevy:no-manifest, bevy:check-failed, bevy:zero-tests, bevy:failed, bevy:pass,
+# bevy:compile-failed, bevy:nonzero, web:0, web:nonzero,
 # web:pass, web:failed, web:zero-tests, web:build-failed, web:no-browser,
 # web:no-test-script.
 #
@@ -152,7 +163,8 @@ case "$(printf '%s' "$ENGINE_ARG" | tr 'A-Z' 'a-z')" in
   unity) ENGINE=unity; ENAME=Unity ;;
   unreal) ENGINE=unreal; ENAME=Unreal ;;
   web) ENGINE=web; ENAME=Web ;;
-  *) echo "test-run: '$ENGINE_ARG' is not an engine this knows (godot, unity, unreal, web)" >&2; exit 3 ;;
+  bevy) ENGINE=bevy; ENAME=Bevy ;;
+  *) echo "test-run: '$ENGINE_ARG' is not an engine this knows (godot, unity, unreal, web, bevy)" >&2; exit 3 ;;
 esac
 case "$PLATFORM" in editmode|playmode) ;; *) usage "--platform is editmode or playmode" ;; esac
 case "$OS_ARG" in ""|windows|linux|macos) ;; *) usage "--os is windows, linux or macos" ;; esac
@@ -201,6 +213,7 @@ else
   elif [ "$ENGINE" = godot ] && exe_ok godot; then EXE="godot"; EXE_SRC="path"
   elif [ "$ENGINE" = unity ] && exe_ok Unity; then EXE="Unity"; EXE_SRC="path"
   elif [ "$ENGINE" = web ] && exe_ok npm; then EXE="npm"; EXE_SRC="path"
+  elif [ "$ENGINE" = bevy ] && exe_ok cargo; then EXE="cargo"; EXE_SRC="path"
   fi
 fi
 printf 'exe\t%s\t%s\n' "${EXE:--}" "$EXE_SRC"
@@ -267,6 +280,13 @@ case "$ENGINE" in
     # The engine table's test command (studio/engines/engines.tsv).
     if [ -f "$HERE/engine-row.awk" ] && [ -f "$HERE/../engines/engines.tsv" ]; then
       CMD=$(awk -F'\t' -v engine=web -v col=test -f "$HERE/engine-row.awk" "$HERE/../engines/engines.tsv")
+    fi
+    [ -n "$CMD" ] && CMD="$CMD 2>&1"
+    ;;
+  bevy)
+    # The engine table's test command (studio/engines/engines.tsv): `cargo test`.
+    if [ -f "$HERE/engine-row.awk" ] && [ -f "$HERE/../engines/engines.tsv" ]; then
+      CMD=$(awk -F'\t' -v engine=bevy -v col=test -f "$HERE/engine-row.awk" "$HERE/../engines/engines.tsv")
     fi
     [ -n "$CMD" ] && CMD="$CMD 2>&1"
     ;;
@@ -377,6 +397,18 @@ case "$ENGINE" in
     if [ "$NOBUILD" = 1 ]; then PRE_WHY="skipped: --no-build"
     elif [ -z "$EXE" ]; then PRE_WHY="skipped: no UE root (--exe or engine.path)"
     else PRE_CMD="$BUILD"; fi ;;
+  bevy)
+    # cargo test's exit 101 covers a compile error and a failing test alike, so
+    # the crate is compiled first and the two are reported apart.
+    PRE_NAME=check
+    if [ "$NOBUILD" = 1 ]; then PRE_WHY="skipped: --no-build"
+    elif [ -z "$EXE" ]; then PRE_WHY="skipped: no cargo executable (--exe, commands.test, engine.path, PATH)"
+    elif [ "$CMD_SRC" != default ]; then
+      # A command the project supplies carries its own feature set, so a check
+      # with cargo's defaults could fail for a reason the tests never would.
+      # The run's own output is read for `error[E…]` instead (bevy:compile-failed).
+      PRE_WHY="skipped: the test command is the project's own, so its feature set is not second-guessed"
+    else PRE_CMD="\"$EXE\" check --tests 2>&1"; fi ;;
 esac
 [ -n "$CMD" ] && printf 'command\t%s\t%s\n' "$CMD_SRC" "$CMD"
 if [ -n "$PRE_CMD" ]; then printf '%s\t%s\n' "$PRE_NAME" "$PRE_CMD"
@@ -418,6 +450,12 @@ case "$ENGINE" in
   web)
     [ -n "$CMD" ] || ran_no runner-unavailable "no test command (--cmd, commands.test or the engine table)" "no test command was found, so the tests could not be run here"
     [ -z "$NO_TEST_SCRIPT" ] || ran_no web:no-test-script "$NO_TEST_SCRIPT" "the project has no test script, so no test ran" ;;
+  bevy)
+    if [ -f Cargo.toml ]; then printf 'precheck\tCargo.toml\tpresent\n'
+    else
+      printf 'precheck\tCargo.toml\tabsent\n'
+      ran_no bevy:no-manifest "no Cargo.toml in the project root" "there is no Cargo manifest, so cargo has no crate to test"
+    fi ;;
 esac
 if [ -z "$EXE" ] && [ "$CMD_SRC" = default ]; then
   ran_no runner-unavailable "no editor executable (commands.test, engine.path, PATH)" "the engine executable was not found, so the tests could not be run here"
@@ -530,6 +568,22 @@ if [ "$PRE_NAME" = build ] && [ -n "$PRE_CMD" ] && [ "$PRE_CODE" != 0 ]; then
   printf 'pre_log\t%s\n' "$PRE_LOG"
   exit 0
 fi
+# A crate that does not compile runs no test: cargo test would exit 101 for
+# both a compile error and a failing test, and the check has already told them
+# apart.
+if [ "$PRE_NAME" = check ] && [ -n "$PRE_CMD" ] && [ "$PRE_CODE" != 0 ]; then
+  if [ "$PRE_TIMED" = yes ]; then
+    printf 'ran\tno\tthe compile check timed out after %ss\n' "$TIMEOUT"
+    printf 'rule\ttimeout\tthe compile check did not complete: timed out after %ss, so nothing was verified\n' "$TIMEOUT"
+  else
+    printf 'ran\tno\tthe crate did not compile (cargo check --tests exit %s)\n' "$PRE_CODE"
+    _ce=$(grep -E -m 1 '^error(\[E[0-9]+\])?:' "$PRE_LOG" 2>/dev/null | head -1 | tr -d '\r')
+    [ -n "$_ce" ] && printf 'evidence\t%s\n' "$_ce"
+    printf 'rule\tbevy:check-failed\tthe crate did not compile, so no test ran\n'
+  fi
+  printf 'pre_log\t%s\n' "$PRE_LOG"
+  exit 0
+fi
 if [ "$ENGINE" = web ]; then
   # NO_COLOR, and the colour codes that still come stripped, so the lines read plainly.
   ESC=$(printf '\033')
@@ -623,6 +677,38 @@ case "$ENGINE" in
     elif [ "$CODE" = 126 ] || [ "$CODE" = 127 ]; then set_rule runner-unavailable "the editor did not start (command not found or not executable)"
     elif [ "$CODE" = 0 ] && [ "$nok" -gt 0 ]; then set_rule unreal:pass "exit 0 with Result={Success} lines"
     elif [ "$CODE" != 0 ]; then set_rule unreal:other-nonzero "a non-zero exit with no Result={Fail} line and no 'no tests matched': no test ran"
+    fi ;;
+  bevy)
+    # libtest's own summary line: "test result: ok. 3 passed; 0 failed; ...",
+    # which cargo test prints. It prints ONE PER TEST TARGET (the crate's
+    # unittests, then each tests/*.rs), so the counts are summed across them.
+    tl_all=$(grep -E '^test result:' "$LOG" 2>/dev/null | tr -d '\r')
+    npass=""; nfail=""
+    if [ -n "$tl_all" ]; then
+      npass=$(printf '%s\n' "$tl_all" | sed -n -E 's/.*[^0-9]([0-9]+) passed.*/\1/p; s/^([0-9]+) passed.*/\1/p' | awk '{ s += $1 } END { print s + 0 }')
+      nfail=$(printf '%s\n' "$tl_all" | sed -n -E 's/.*[^0-9]([0-9]+) failed.*/\1/p; s/^([0-9]+) failed.*/\1/p' | awk '{ s += $1 } END { print s + 0 }')
+      printf 'tests\ttotal=%s passed=%s failed=%s\n' "$((npass + nfail))" "$npass" "$nfail"
+    else
+      printf 'tests\t-\tnot sourced: no "test result:" summary line in the output\n'
+    fi
+    # No test ran when every target's summary reports zero passed and zero
+    # failed. A target that printed "running 0 tests" beside one that ran tests
+    # is not a run that found none.
+    zm=""
+    if [ -n "$tl_all" ] && [ "$npass" = 0 ] && [ "$nfail" = 0 ]; then
+      zm=$(printf '%s\n' "$tl_all" | head -1)
+    fi
+    if [ -n "$zm" ]; then printf 'zero_tests\tyes\t%s\n' "$zm"; else printf 'zero_tests\tno\t-\n'; fi
+    list_failed '^test .+ \.\.\. FAILED' "$LOG"
+    cerr=$(first_line '^error(\[E[0-9]+\])?:')
+    [ -n "$cerr" ] && printf 'evidence\t%s\n' "$cerr"
+    if [ "$TIMED" = yes ]; then set_rule timeout "the run did not complete: timed out after ${TIMEOUT}s, so nothing was verified"
+    elif [ -n "$zm" ]; then set_rule bevy:zero-tests "no test ran: the crate's test targets hold none, which is not a pass"
+    elif [ -n "$nfail" ] && [ "$nfail" -gt 0 ]; then set_rule bevy:failed "a test failed"
+    elif [ "$CODE" = 126 ] || [ "$CODE" = 127 ]; then set_rule runner-unavailable "cargo did not start (command not found or not executable)"
+    elif [ "$CODE" = 0 ] && [ -n "$npass" ] && [ "$npass" -gt 0 ]; then set_rule bevy:pass "exit 0 with a passing test result summary"
+    elif [ -n "$cerr" ]; then set_rule bevy:compile-failed "the crate did not compile, so no test ran: $cerr"
+    elif [ "$CODE" != 0 ]; then set_rule bevy:nonzero "a non-zero exit with no failed test and no test result summary read"
     fi ;;
   web)
     if [ -z "$WEB_RUNNERS" ]; then

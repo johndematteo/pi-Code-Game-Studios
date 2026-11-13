@@ -2,7 +2,7 @@
 
 Read after the engine audit, once an engine is set. It holds what the primary
 engine specialist checked; you apply it here. Use the section for `engine.name`:
-Godot, Unity or Unreal; for Web, the lead programmer's section.
+Godot, Unity, Unreal or Bevy; for Web, the lead programmer's section.
 
 ## How to look
 
@@ -62,6 +62,29 @@ reference does not cover is marked `unverified`, never asserted from memory.
 - Large logic in Blueprint graphs that belongs in C++; raw UObject pointers with
   no `UPROPERTY`.
 - Multiplayer state not server-authoritative, or replicated more than needed.
+
+## Bevy
+
+- Systems that reach for `Query<&mut T>` on a wide set every frame, or a
+  `Resource` holding game state that several systems mutate: both are the
+  archetype and borrow-check costs the ECS exists to avoid. Ask what the schedule
+  ordering actually is.
+- `Event` where 0.20's `Message` belongs. Since 0.20 `Event` is an entity-event
+  observer type and buffered events are `Message`/`MessageWriter`/`MessageReader`;
+  an ADR written from memory will name the old API (`breaking-changes.md`).
+- `Parent`/`Trigger` instead of `ChildOf`/`On` — renamed in 0.20. A design that
+  assumes `Trigger<E>` for observers has the wrong type.
+- Rendering assumptions that only hold with the default features: a headless or
+  CI design that does not name `--no-default-features --features default_app`
+  will pull in the renderer and fail without a GPU.
+- Plugin ordering assumed rather than declared — `MinimalPlugins`, `DefaultPlugins`
+  and community plugin groups differ, and `add_plugins` order is load-bearing.
+- Physics chosen by habit: Avian and `bevy_rapier` are mutually exclusive, and a
+  design naming both, or neither, is unresolved (`PLUGINS.md`).
+- An ecosystem crate pinned to a Bevy version the project does not build — the
+  community lags each release by weeks, so `Cargo.lock` is the claim to check.
+- UI built on the retained `bevy_ui` tree where an immediate-mode crate was
+  chosen, or vice versa; and text/asset paths hard-coded rather than loaded.
 
 ## Web (the lead programmer's lens)
 

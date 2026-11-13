@@ -20,11 +20,13 @@
 #          [--budget KEY=SIZE ...] [--max-dim N] [--sample-rates LIST]
 #          [--name-regex ERE] [--files]
 #   --root DIR          the project; defaults to the repo this script is in
-#   --engine E          godot, unity, unreal or web (default: engine.name from
+#   --engine E          godot, unity, unreal, web or bevy (default: engine.name from
 #                       project.local.yaml, then project.yaml, as content-count.sh)
 #   --category C        keep one category: on godot a folder of assets/ (art,
-#                       audio, vfx, shaders or data); on unity and unreal the
-#                       first folder under the asset root (any case)
+#                       audio, vfx, shaders or data); on bevy any first folder
+#                       under assets/ (textures, models, fonts, scenes, ...); on
+#                       unity and unreal the first folder under the asset root
+#                       (any case)
 #   --budget KEY=SIZE   a size budget in bytes, or with a K (1024) or M
 #                       (1048576) suffix. Budgets are prose in the art bible,
 #                       so they are flags and never read from it. KEY is `all`,
@@ -46,11 +48,13 @@
 #           (other folders of assets/ are counted as outside_scope, not scanned)
 #   unity   Assets/, leaving out scripts (.cs, .asmdef) and .meta files
 #   unreal  Content/*.uasset and Content/*.umap
+#   bevy    assets/ (the AssetServer root), leaving out .meta files
 # Left out on every engine: .gitkeep placeholders. Left out on godot: .import
 # files (the importer writes one beside each source asset; it is not an asset
 # and its source_file line is not a reference) and .uid files (Godot 4.4+
-# writes one beside each script and shader). Each left-out kind is counted in
-# an `excluded` row.
+# writes one beside each script and shader). Left out on bevy: .meta files (the
+# asset processor writes one beside each asset). Each left-out kind is counted
+# in an `excluded` row.
 #
 # Naming (the skill's Phase 3): all file names lowercase with underscores. The
 # built-in rule is the characters a-z 0-9 and _ in the name and a-z 0-9 in the
@@ -78,27 +82,30 @@
 # for the same reason the last-modified time the skill lists with its orphans
 # is not read.
 #
-# Orphans and missing (godot only): the references are the res:// paths found
-# in every .gd, .cs, .gdshader, .gdshaderinc, .tscn and .tres file of the
-# project (except under .godot/ and .git/) and in project.godot, so a scene or
-# resource that names an asset counts. A path ends at a quote, a bracket, a
-# comma, a semicolon or (when it did not start in quotes) a space. An asset is
-# an ORPHAN when no other file names its path. A path ending in / is a folder
-# prefix (DYNAMIC prefix): it covers every asset below it, and the row says how
-# many. A path with % or * or ? is a built name (DYNAMIC pattern) and covers
-# nothing. A reference to a file under assets/ that does not exist is MISSING,
-# with the first place it appears and how many places name it. Both need at
-# least one .gd, .cs or .gdshader file under src/ (the skill: no code to
-# search means not assessed), and run only on godot: on unity and unreal most
-# references live in scenes, prefabs and other assets, and no reference syntax
-# for them is defined here.
+# Orphans and missing (godot and bevy): on godot the references are the res://
+# paths found in every .gd, .cs, .gdshader, .gdshaderinc, .tscn and .tres file
+# of the project (except under .godot/ and .git/) and in project.godot, so a
+# scene or resource that names an asset counts. A path ends at a quote, a
+# bracket, a comma, a semicolon or (when it did not start in quotes) a space. On
+# bevy the references are the Rust string literals in every .rs file under the
+# code root (except under target/ and .git/) that end in an extension, hold no
+# space and no format placeholder -- asset_server.load("textures/player.png") is
+# the one shape Bevy uses. An asset is an ORPHAN when no other file names its
+# path. A path ending in / is a folder prefix (DYNAMIC prefix): it covers every
+# asset below it, and the row says how many. A path with % or * or ? is a built
+# name (DYNAMIC pattern) and covers nothing. A reference to a file that does not
+# exist is MISSING, with the first place it appears and how many places name it.
+# Both need at least one source file under the code root (the skill: no code to
+# search means not assessed). They run on godot and bevy only: on unity and
+# unreal most references live in scenes, prefabs and other assets, and no
+# reference syntax for them is defined here.
 #
 # Output: TSV, in this order.
 #   engine <name> <source: flag, project.yaml, ...>, root <dir> present|absent,
 #   category_filter <name> (with --category), scanned <n>, outside_scope <n> <note>
 #   (godot), excluded <kind> <n> per kind, category <name> <n> per category
-#   (godot: art, audio, vfx, shaders, data; others: by name, `-` for files
-#   directly in the root), check <name> <ran | not_run | not_checkable> <detail>
+#   (godot: art, audio, vfx, shaders, data; others, bevy included: by name, `-`
+#   for files directly in the root), check <name> <ran | not_run | not_checkable> <detail>
 #   for naming, art_pattern, audio_pattern, pot, size, dim, rate, orphans,
 #   missing, data, format and last_modified, then hits <kind> <n | -> for
 #   naming, pot, size, dim, rate, notread, orphan and missing, then the rows:
@@ -244,19 +251,20 @@ case "$LOW" in
   unity) ENG=unity ;;
   unreal*) ENG=unreal ;;
   web) ENG=web ;;
+  bevy) ENG=bevy ;;
   *)
-    if [ "$ESRC" = flag ]; then usage "--engine takes godot, unity, unreal or web, got $RAW"; fi
+    if [ "$ESRC" = flag ]; then usage "--engine takes godot, unity, unreal, web or bevy, got $RAW"; fi
     printf 'engine\t%s\t%s\n' "$RAW" "$ESRC"
-    echo "asset-scan: engine $RAW has no asset rules here (godot, unity, unreal or web)" >&2
+    echo "asset-scan: engine $RAW has no asset rules here (godot, unity, unreal, web or bevy)" >&2
     exit 3 ;;
 esac
 ROOTDIR=$(cell asset_root)
-if [ "$ENG" = godot ] && [ -n "$CATF" ]; then
-  case "$CATF" in
-    art|audio|vfx|shaders|data) ;;
-    *) usage "--category on godot takes art, audio, vfx, shaders or data, got $CATF" ;;
-  esac
-fi
+case "$ENG" in
+  godot|bevy) [ -z "$CATF" ] || case "$CATF" in
+    art|audio|vfx|shaders|data|textures|models|fonts|scenes) ;;
+    *) usage "--category on $ENG takes art, audio, vfx, shaders, data, textures, models, fonts or scenes, got $CATF" ;;
+  esac ;;
+esac
 
 printf 'engine\t%s\t%s\n' "$ENG" "$ESRC"
 # The exact name from the listing: -d would say yes to Assets for a directory
@@ -278,12 +286,13 @@ CLASS=$(printf '%s\n' "$ALLF" | ENG="$ENG" CATF="$CATF" awk '
     base = seg[n]
     ext = ""
     if (match(base, /\.[^.]*$/)) ext = tolower(substr(base, RSTART + 1))
-    # Every file but a .import is something a reference could name.
-    if (eng == "godot" && ext != "import") print "E\t" p
+    # Every file but an import sidecar is something a reference could name.
+    if ((eng == "godot" && ext != "import") || eng == "bevy") print "E\t" p
     reason = ""
     if (base == ".gitkeep") reason = ".gitkeep"
     else if (eng == "godot" && ext == "import") reason = ".import"
     else if (eng == "godot" && ext == "uid") reason = ".uid"
+    else if (eng == "bevy" && ext == "meta") reason = ".meta"
     else if (eng == "unity" && ext == "meta") reason = ".meta"
     else if (eng == "unity" && ext == "cs") reason = ".cs"
     else if (eng == "unity" && ext == "asmdef") reason = ".asmdef"
@@ -314,12 +323,23 @@ command -v file >/dev/null 2>&1 && HAVEFILE=1
 # The files orphans and missing search: godot only, and only when src/ holds
 # code, as the skill says.
 SRCN=0; CORPUS=""; NCORP=0
+COROOT=$(cell code_root); COROOT=${COROOT:-src}
 if [ "$ENG" = godot ] && [ -d src ]; then
   SRCN=$(find src -type f \( -name '*.gd' -o -name '*.cs' -o -name '*.gdshader' \) 2>/dev/null | wc -l | tr -d ' ')
   if [ "$SRCN" -gt 0 ]; then
     CORPUS=$(find . -type f \( -name '*.gd' -o -name '*.cs' -o -name '*.gdshader' -o -name '*.gdshaderinc' \
       -o -name '*.tscn' -o -name '*.tres' -o -name 'project.godot' \) \
       -not -path './.godot/*' -not -path './.git/*' 2>/dev/null | sed 's|^\./||' | sort)
+    NCORP=$(printf '%s\n' "$CORPUS" | awk 'length($0) > 0' | wc -l | tr -d ' ')
+  fi
+elif [ "$ENG" = bevy ] && [ -d "$COROOT" ]; then
+  # Bevy loads assets by a path relative to the AssetServer root, written as a
+  # Rust string literal: asset_server.load("textures/player.png"). The crate's
+  # sources are the only place those paths appear, so they are what orphans and
+  # missing are read against.
+  SRCN=$(find "$COROOT" -type f -name '*.rs' 2>/dev/null | wc -l | tr -d ' ')
+  if [ "$SRCN" -gt 0 ]; then
+    CORPUS=$(find "$COROOT" -type f -name '*.rs' -not -path './target/*' -not -path './.git/*' 2>/dev/null | sed 's|^\./||' | sort)
     NCORP=$(printf '%s\n' "$CORPUS" | awk 'length($0) > 0' | wc -l | tr -d ' ')
   fi
 fi
@@ -389,6 +409,25 @@ fi
   FNR == 1 { curfile = substr(FILENAME, 3) }
   {
     t = $0; sub(/\r$/, "", t)
+    if (eng == "bevy") {
+      # Bevy names an asset by its path under the AssetServer root, as a Rust
+      # string literal. Only a string that ends in an extension, holds no space
+      # and no format placeholder is taken as one.
+      while ((i = match(t, /"[^"]*\"/)) > 0) {
+        tok = substr(t, i + 1, RLENGTH - 2)
+        t = substr(t, i + RLENGTH)
+        if (tok == "") continue
+        sub(/^\.\//, "", tok)
+        if (tok !~ /\.[a-z0-9]+$/ || tok ~ / / || tok ~ /\{/) continue
+        # A Bevy load path is relative to the AssetServer root; the scanned files
+        # are listed with that root in front, so both sides compare as one path.
+        if (index(tok, rootdir "/") != 1) tok = rootdir "/" tok
+        refn[tok]++
+        if (!(tok in rloc)) { rloc[tok] = curfile ":" FNR; rk[++nrk] = tok }
+        if (tok != curfile) other[tok] = 1
+      }
+      next
+    }
     while ((i = index(t, "res://")) > 0) {
       prev = (i > 1) ? substr(t, i - 1, 1) : ""
       rest = substr(t, i + 6)
@@ -467,6 +506,7 @@ fi
     if (eng == "godot") { nx = split(".import .uid .gitkeep", xl, " ") }
     else if (eng == "unity") { nx = split(".meta .cs .asmdef .gitkeep", xl, " ") }
     else if (eng == "unreal") { nx = 2; xl[1] = "not .uasset or .umap"; xl[2] = ".gitkeep" }
+    else if (eng == "bevy") { nx = 2; xl[1] = ".meta"; xl[2] = ".gitkeep" }
     else { nx = 1; xl[1] = ".gitkeep" }
     for (i = 1; i <= nx; i++) printf "excluded\t%s\t%d\n", xl[i], xc[xl[i]]
 
@@ -518,12 +558,20 @@ fi
     else { ratest = "ran"; rated = (nra > 0) ? ("file -b; allowed " ENVIRON["RATES"]) : "file -b; no --sample-rates flag given, none compared" }
     if (nodata != "") { orphst = "not_run"; orphd = nodata }
     else if (eng == "web") { orphst = "not_run"; orphd = "no reference syntax is defined for " eng }
+    else if (eng == "bevy") {
+      if (srcn == 0) { orphst = "not_run"; orphd = "no Rust sources under the code root" }
+      else { orphst = "ran"; orphd = ncorp " Rust files searched for asset paths" }
+    }
     else if (eng != "godot") { orphst = "not_run"; orphd = "references live in scenes, prefabs and other assets, not in code" }
     else if (srcn == 0) { orphst = "not_run"; orphd = "no source files under src/" }
     else { orphst = "ran"; orphd = ncorp " files searched for res:// paths" }
-    if (eng != "godot") { missst = "not_run"; missd = "no reference syntax is defined for " eng }
-    else if (srcn == 0) { missst = "not_run"; missd = "no source files under src/" }
-    else { missst = "ran"; missd = ncorp " files searched for res:// paths" }
+    if (eng == "godot") { missst = "ran"; missd = ncorp " files searched for res:// paths" }
+    else if (eng == "bevy") {
+      if (srcn == 0) { missst = "not_run"; missd = "no Rust sources to read asset paths from" }
+      else { missst = "ran"; missd = ncorp " Rust files searched for asset paths" }
+    }
+    else { missst = "not_run"; missd = "no reference syntax is defined for " eng }
+    if (eng == "godot" && srcn == 0) { missst = "not_run"; missd = "no source files under src/" }
 
     printf "check\tnaming\t%s\t%s\n", namingst, namingd
     if (gdnaming) {

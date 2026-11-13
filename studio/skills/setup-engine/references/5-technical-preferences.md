@@ -19,6 +19,8 @@ engine-appropriate defaults. Read the existing template first, then fill in:
 
 **Web:** the values are in `references/web.md` (W3).
 
+**Bevy:** the values are in `references/bevy.md` (B3).
+
 ### Engine & Language Section
 - Fill from the engine choice made in step 4
 
@@ -40,6 +42,14 @@ engine-appropriate defaults. Read the existing template first, then fill in:
 - Functions: PascalCase (e.g., `TakeDamage()`)
 - Booleans: `b` prefix (e.g., `bIsAlive`)
 - Files: Match class without prefix (e.g., `PlayerController.h`)
+
+**For Bevy (Rust):**
+- Files and modules: snake_case (e.g., `player_controller.rs`, `mod combat_system`)
+- Types, traits and enums: UpperCamelCase (e.g., `PlayerController`, `DamageEvent`)
+- Functions and methods: snake_case (e.g., `take_damage`, `apply_damage`)
+- Constants and statics: SCREAMING_SNAKE_CASE (e.g., `MAX_HEALTH`)
+- Tests: `#[cfg(test)] mod tests` beside the code for unit tests, `tests/<system>.rs` for cargo integration targets — never a folder under `tests/`, which cargo does not compile
+- Note: rustfmt and clippy enforce most of this; `cargo fmt` and `cargo clippy` are the arbiter, not this list
 
 ### Input & Platform Section
 
@@ -96,7 +106,8 @@ Example filled section:
   - Options: `[A] Set defaults now (60fps, 16.6ms frame budget, engine-appropriate draw call limit)` / `[B] Leave as [TO BE CONFIGURED] — I'll set these when I know my target hardware`
   - If [A]: populate with the suggested defaults. If [B]: leave as placeholder.
 - **Testing**: Suggest the engine-appropriate framework — **gdUnit4** for Godot,
-  NUnit for Unity, Automation Spec for Unreal — and ask before adding.
+  NUnit for Unity, Automation Spec for Unreal, `cargo test` (libtest) for Bevy —
+  and ask before adding.
   > **Must match `commands.test` in Section 5.5.1, which writes gdUnit4's own
   > runner (`res://addons/gdUnit4/bin/GdUnitCmdTool.gd`), and
   > `studio/docs/coding-standards.md`, which names the same runner.** Naming GUT
@@ -156,6 +167,27 @@ Also populate the `## Engine Specialists` section in `technical-preferences.md` 
 | Native extension / plugin files (Plugin .uplugin, modules) | unreal-specialist |
 | Blueprint graphs (.uasset BP classes) | ue-blueprint-specialist |
 | General architecture review | unreal-specialist |
+```
+
+**For Bevy:**
+```markdown
+## Engine Specialists
+- **Primary**: lead-programmer (no Bevy specialist agent; engine work goes to lead-programmer against docs/engine-reference/bevy/)
+- **Language/Code Specialist**: lead-programmer (Rust)
+- **Shader Specialist**: lead-programmer (WGSL shaders, docs/engine-reference/bevy/modules/rendering.md)
+- **UI Specialist**: lead-programmer (in-engine bevy_ui, docs/engine-reference/bevy/modules/ui.md)
+- **Additional Specialists**: none
+- **Routing Notes**: There is no Bevy specialist. All engine work — ECS and schedules, rendering and WGSL, UI, asset loading, and the physics/networking crate choice — goes to lead-programmer, which must read docs/engine-reference/bevy/ first: Bevy is 0.x with breaking changes every release, and remembered API is untrusted.
+
+### File Extension Routing
+
+| File Extension / Type | Specialist to Spawn |
+|-----------------------|---------------------|
+| Game code (.rs files) | lead-programmer |
+| Shader files (.wgsl) | lead-programmer |
+| Manifest and dependency files (Cargo.toml, Cargo.lock) | lead-programmer |
+| Scene data (.scn.ron, assets/) | lead-programmer |
+| General architecture review | lead-programmer |
 ```
 
 ### Collaborative Step

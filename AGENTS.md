@@ -15,14 +15,16 @@ Before acting, read:
 
 ## Technology Stack
 
-- **Engine**: [CHOOSE: Web / Godot 4 / Unity / Unreal Engine 5]
-- **Language**: [CHOOSE: TypeScript / GDScript / C# / C++ / Blueprint]
+- **Engine**: [CHOOSE: Web / Godot 4 / Unity / Unreal Engine 5 / Bevy]
+- **Language**: [CHOOSE: TypeScript / GDScript / C# / C++ / Blueprint / Rust]
 - **Version Control**: Git with trunk-based development
 - **Build System**: [SPECIFY after choosing engine]
 - **Asset Pipeline**: [SPECIFY after choosing engine]
 
 > **Note**: Engine-specialist agents exist for Godot, Unity, and Unreal with
-> dedicated sub-specialists. Use the set matching your engine.
+> dedicated sub-specialists. Use the set matching your engine. Web and Bevy have
+> no engine-specialist agent: engine work on those routes to `lead-programmer`
+> against `docs/engine-reference/web/` or `docs/engine-reference/bevy/`.
 
 ## Project Structure
 

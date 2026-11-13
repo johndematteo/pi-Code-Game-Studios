@@ -57,6 +57,14 @@ Update the Technology Stack section, replacing the `[CHOOSE]` placeholders with 
 The Language line follows the primary-language answer above: the first form for
 `[A]` (`engine.language: "C++"`), the second for `[B]` (`"Blueprint"`).
 
+**For Bevy** — the four lines in `references/bevy.md` (B3):
+```markdown
+- **Engine**: Bevy [version]
+- **Language**: Rust
+- **Build System**: Cargo — `cargo build` / `cargo run`
+- **Asset Pipeline**: `assets/` is Bevy's AssetServer root; the asset processor writes `.meta` files beside each asset
+```
+
 ### Engine reference import
 
 In the same AGENTS.md write, set the **Engine Version Reference** import to the
@@ -69,6 +77,7 @@ on its own right after the comment's closing `-->`:
 - Unity → `@docs/engine-reference/unity/VERSION.md`
 - Unreal → `@docs/engine-reference/unreal/VERSION.md`
 - Web → `@docs/engine-reference/web/VERSION.md`
+- Bevy → `@docs/engine-reference/bevy/VERSION.md`
 
 This keeps a Unity or Unreal project from loading the Godot reference in every
 session, and a project with no engine from loading any. It is idempotent —

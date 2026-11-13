@@ -1,9 +1,9 @@
 ---
 name: setup-engine
-description: "Sets up and pins the engine version: web for a new project unless Godot, Unity or Unreal is named. Use to choose or upgrade it."
+description: "Sets up and pins the engine version: web for a new project unless Godot, Unity, Unreal or Bevy is named. Use to choose or upgrade it."
 argument-hint: "[engine] | [engine version] | refresh | upgrade [old-version] [new-version] | no args for guided selection"
 user-invocable: true
-allowed-tools: Read, Glob, Grep, Write, Edit, WebSearch, WebFetch, Agent, AskUserQuestion, Bash(bash "*/studio/skills/setup-engine/../../hooks/yaml-helper.sh" resolve_config *), Bash(godot --version), Bash(godot --headless --path . --import), Bash(command -v godot), Bash(uname -s), Bash(bash studio/scripts/project-coherence.sh*), Bash(node --version), Bash(npm ci*), Bash(npm run build*), Bash(bash studio/scripts/web-scaffold.sh*), Bash(bash studio/scripts/web-detect.sh*), Bash(pnpm install --frozen-lockfile*), Bash(yarn install --frozen-lockfile*), Bash(yarn install --immutable*), Bash(bun install --frozen-lockfile*), Bash(pnpm run build*), Bash(yarn run build*), Bash(bun run build*), Bash(bash studio/scripts/test-run.sh web*), Bash(bash studio/scripts/page-shot.sh *)
+allowed-tools: Read, Glob, Grep, Write, Edit, WebSearch, WebFetch, Agent, AskUserQuestion, Bash(bash "*/studio/skills/setup-engine/../../hooks/yaml-helper.sh" resolve_config *), Bash(godot --version), Bash(godot --headless --path . --import), Bash(command -v godot), Bash(cargo --version), Bash(rustc --version), Bash(command -v cargo), Bash(cargo check*), Bash(cargo build*), Bash(cargo run*), Bash(cargo test*), Bash(uname -s), Bash(bash studio/scripts/project-coherence.sh*), Bash(node --version), Bash(npm ci*), Bash(npm run build*), Bash(bash studio/scripts/web-scaffold.sh*), Bash(bash studio/scripts/web-detect.sh*), Bash(pnpm install --frozen-lockfile*), Bash(yarn install --frozen-lockfile*), Bash(yarn install --immutable*), Bash(bun install --frozen-lockfile*), Bash(pnpm run build*), Bash(yarn run build*), Bash(bun run build*), Bash(bash studio/scripts/test-run.sh web*), Bash(bash studio/scripts/test-run.sh bevy*), Bash(bash studio/scripts/page-shot.sh *)
 model: sonnet
 ---
 
@@ -38,6 +38,11 @@ Modes:
   recorded as it is. **Read `references/web.md` now and follow it**:
   it replaces Sections 3, 6, 7 and 7.5 for Web and gives the values Sections 4, 5
   and 5.5 write
+- **Bevy**: `/setup-engine bevy` — a Rust game on Bevy, at the version the
+  project's `Cargo.toml` already names, or at the release `/setup-engine` looks
+  up. **Read `references/bevy.md` now and follow it**: it replaces Sections 3, 6
+  and 7.5 for Bevy, records the version from `Cargo.toml`/`Cargo.lock`, and never
+  writes into an existing crate
 - **No args**: `/setup-engine` — guided mode: an existing project keeps its engine;
   a new one is offered web first (Section 2)
 - **Refresh**: `/setup-engine refresh` — update reference docs (see Section 10)
@@ -83,8 +88,8 @@ Modes:
 
 ## 9. Update Agent Instructions
 
-On Web there is no engine specialist agent: skip this section and say so
-(`references/web.md`, W7).
+On Web or Bevy there is no engine specialist agent: skip this section and say so
+(`references/web.md`, W7; `references/bevy.md`, B7).
 
 Ask: "May I add a Version Awareness section to the engine specialist agent files?" before making any edits.
 

@@ -14,6 +14,7 @@ Check whether the engine version is likely beyond the LLM's training data.
 - Godot: training data likely covers up to ~4.3
 - Unity: training data likely covers up to ~2022 LTS (2022.3)
 - Unreal: training data likely covers up to ~5.3
+- Bevy: training data likely covers up to ~0.16 (released 2025-04-24, just before the cutoff)
 
 > **This table goes stale silently, and a stale table fails in the dangerous
 > direction only if it is too *new*.** A cutoff left unchanged for a year after
@@ -30,6 +31,20 @@ Check whether the engine version is likely beyond the LLM's training data.
 
 **Web** is HIGH RISK: every version the scaffold pins is newer than the model's
 training (`references/web.md`, W4).
+
+**Bevy** is HIGH RISK from 0.17 onward: 0.17, 0.18, 0.19 and 0.20 all landed
+after the cutoff, and Bevy ships breaking API changes roughly every release with
+no semver stability promise. Treat any Bevy version above 0.16 as `HIGH RISK`
+regardless of how close the comparison looks, and apply the source-read policy in
+`docs/engine-reference/bevy/VERSION.md`: read the module page here, then
+`docs.rs/bevy/<version>`, then the `bevyengine/bevy` examples tree and the
+release's migration guide, before writing Bevy API from memory
+(`references/bevy.md`, B4).
+
+Name the renames that make the risk concrete, because they are what a remembered
+answer gets wrong: on 0.20 a buffered event is `Message` (`MessageWriter`,
+`MessageReader`) while `Event` now means an entity event; `Trigger` is `On`; and
+`Parent` is `ChildOf`. Say them in one line, then move on.
 
 Compare the user's chosen version against these baselines:
 

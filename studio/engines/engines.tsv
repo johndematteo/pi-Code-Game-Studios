@@ -3,3 +3,4 @@ Godot	src	tests	assets	godot --path . --windowed --resolution 1280x720	-	godot -
 Unity	Assets	Assets/Tests	Assets	-	-	-	-
 Unreal	Source	Source/<Module>/Private/Tests	Content	-	-	-	-
 Web	src	tests	assets	npm run dev	npm run build	npm test	npm run smoke
+Bevy	src	tests	assets	cargo run	cargo build	cargo test	-

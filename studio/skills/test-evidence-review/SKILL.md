@@ -111,12 +111,19 @@ it. Fall back to searching only when no path is stated or it is not found:
 
 **Logic stories**: search the engine's unit-test root — `tests/unit/[system]/`
 (Godot), `Assets/Tests/EditMode/` (Unity), `Source/<Module>/Private/Tests/`
-(Unreal); see `studio/docs/directory-structure.md` — for a file whose name
+(Unreal), `tests/*.rs` and `src/**/*.rs` `#[cfg(test)]` modules (Bevy); see
+`studio/docs/directory-structure.md` — for a file whose name
 contains the story slug or its system. Test files are named per
 `studio/rules/test-standards.md`, not necessarily `[story-slug]_test.*`.
 
+**Bevy caveat**: cargo compiles `tests/*.rs` and inline `#[cfg(test)]` modules
+only — a file inside a subfolder such as `tests/unit/foo.rs` is **never
+compiled**. So evidence found there is evidence of nothing. Report it as
+`MISSING` rather than `ADEQUATE`, and say the file is not built.
+
 **Integration stories**: the same, under the integration root (`tests/integration/[system]/`,
-`Assets/Tests/PlayMode/`, or Unreal's test root)
+`Assets/Tests/PlayMode/`, Unreal's test root, or `tests/*.rs` cargo targets for
+Bevy)
   - Also check `production/qa/playtests/` for playtest records mentioning the story
 
 **Visual/Feel and UI stories**: Glob `production/qa/evidence/` for a retained image
@@ -164,7 +171,8 @@ Heuristics:
 Test function names should describe: the scenario + the expected result.
 Pattern per engine (`studio/rules/test-standards.md`): Godot
 `test_[scenario]_[expected]`, Unity `[Scenario]_[Expected]`, Unreal
-`<Project>.[System].[Scenario]`.
+`<Project>.[System].[Scenario]`, Bevy `[scenario]_[expected]` on a `#[test]`
+function in a `#[cfg(test)]` module or a `tests/*.rs` target.
 
 Flag functions named generically (`test_1`, `test_run`, `testBasic`) as
 **naming issues** — they make failures harder to diagnose.

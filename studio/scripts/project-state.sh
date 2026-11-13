@@ -158,8 +158,17 @@ if [ -z "$ENGINE" ] && [ -f "$LEGACY" ]; then
   esac
   [ -n "$ENGINE" ] && { ESRC="$LEGACY"; CSRC="$LEGACY"; }
 fi
+# A Cargo manifest naming bevy is a Bevy project, before the folders are read:
+# Bevy's code root is src/, which is Godot's and Web's too, so the tree alone
+# cannot say which engine it is. The same rule as resolve_code_root in
+# studio/hooks/yaml-helper.sh; keep the two the same.
+if [ -z "$ENGINE" ] && [ -f Cargo.toml ]; then
+  if grep -qE '^[[:space:]]*"?bevy"?(\.[A-Za-z_]+)?[[:space:]]*=' Cargo.toml 2>/dev/null; then
+    ENGINE="Bevy"; ESRC="detected"; CSRC="detected"
+  fi
+fi
 # The code root each engine's own toolchain builds from, from the engine table
-# (Godot src/, Unity Assets/, Unreal Source/, Web src/): the one reader,
+# (Godot src/, Unity Assets/, Unreal Source/, Web src/, Bevy src/): the one reader,
 # engine-row.awk, which resolve_code_root uses too.
 if [ -n "$ENGINE" ] && [ -f "$HERE/engine-row.awk" ] && [ -f "$HERE/../engines/engines.tsv" ]; then
   CODE_ROOT=$(awk -F'\t' -v engine="$ENGINE" -v col=code_root -f "$HERE/engine-row.awk" "$HERE/../engines/engines.tsv")

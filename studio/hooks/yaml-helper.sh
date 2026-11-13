@@ -544,7 +544,7 @@ team.size::individual|small|studio
 performance.enforce::warn|block|off
 platform.cert_tier::none|itch|steam|console
 accessibility.target::none|standard|aaa
-engine.name::Godot|Unity|Unreal|Web
+engine.name::Godot|Unity|Unreal|Web|Bevy
 project.stage::Concept|Systems Design|Technical Setup|Pre-Production|Production|Polish|Release
 project.goal::jam|learn|hobby|portfolio|sell|early_access|publisher|mobile|other
 testing.strict.logic::true|false
@@ -1440,6 +1440,15 @@ _yh_engine_cell() {
   awk -F'\t' -v engine="$1" -v col="$2" -f "$_YH_ENGINE_ROW" "$_YH_ENGINES" 2>/dev/null
 }
 
+# _yh_bevy_manifest -- true when $_YH_ROOT/Cargo.toml names bevy as a dependency.
+# Bevy's code root is src/, which is Godot's and Web's too, so the folders cannot
+# say which engine a project is. The manifest can: only a Bevy crate writes
+# `bevy = ...` into its dependencies. `bevy.workspace = true` counts as well.
+_yh_bevy_manifest() {
+  [ -f "$_YH_ROOT/Cargo.toml" ] || return 1
+  grep -qE '^[[:space:]]*"?bevy"?(\.[A-Za-z_]+)?[[:space:]]*=' "$_YH_ROOT/Cargo.toml" 2>/dev/null
+}
+
 # _yh_code_root_check ROOT VALUE [KEY [DENY]] -- checks an engine.code_root value
 # (or engine.test_root's, named by KEY, with DENY in place of CODE_ROOT_DENY) against
 # the tree at ROOT. Prints the folder when it can be used, a TAB then the reason
@@ -1601,8 +1610,11 @@ resolve_code_root() {
   fi
 
   # 1-2. The configured engine, then the legacy mirror; its folder from the
-  #      engine table (Godot src, Unity Assets, Unreal Source, Web src).
+  #      engine table (Godot src, Unity Assets, Unreal Source, Web src, Bevy src).
+  #      A Cargo manifest naming bevy settles the engine before the folders are
+  #      read: src/ is Godot's and Web's root too.
   _yh_engine_name; ename="$_YH_ENAME"; src="$_YH_ESRC"
+  if [ -z "$ename" ] && _yh_bevy_manifest; then ename="Bevy"; src="detected"; fi
   root=$(_yh_engine_cell "$ename" code_root)
 
   # 3. No usable engine value — believe the tree, but only if it is unambiguous.
@@ -1648,8 +1660,10 @@ resolve_test_root() {
     fi
   fi
   _yh_engine_name
-  root=$(_yh_engine_cell "$_YH_ENAME" test_root)
-  if [ -n "$root" ]; then printf '%s\t%s' "$root" "$_YH_ESRC"; else printf '\tunset'; fi
+  ename="$_YH_ENAME"; src="$_YH_ESRC"
+  if [ -z "$ename" ] && _yh_bevy_manifest; then ename="Bevy"; src="detected"; fi
+  root=$(_yh_engine_cell "$ename" test_root)
+  if [ -n "$root" ]; then printf '%s\t%s' "$root" "$src"; else printf '\tunset'; fi
 }
 
 # List the child key names of a mapping node (one per line). get_yaml_key
@@ -2103,9 +2117,10 @@ EOF
       godot)   sp_primary="godot-specialist" ;;
       unity)   sp_primary="unity-specialist" ;;
       unreal*) sp_primary="unreal-specialist" ;;
-      # No web specialist: engine work on Web goes to lead-programmer,
-      # against docs/engine-reference/web/.
-      web)     sp_primary="lead-programmer" ;;
+      # No web or bevy specialist: engine work on Web and Bevy goes to
+      # lead-programmer, against docs/engine-reference/web/ or
+      # docs/engine-reference/bevy/.
+      web|bevy) sp_primary="lead-programmer" ;;
       *)       sp_primary="" ;;
     esac
     sp_psrc="engine.name"

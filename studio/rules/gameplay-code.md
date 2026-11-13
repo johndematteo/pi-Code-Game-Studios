@@ -11,7 +11,7 @@ paths:
 - ALL gameplay values MUST come from external config/data files, NEVER hardcoded
 - Use delta time for ALL time-dependent calculations (frame-rate independence)
 - NO direct references to UI code — use events for cross-system communication
-  (Godot signals, C# events, Unreal delegates)
+  (Godot signals, C# events, Unreal delegates, Bevy `Message` types or observers)
 - Every gameplay system must implement a clear interface
 - State machines must have explicit transition tables with documented states
 - Write unit tests for all gameplay logic — separate logic from presentation
@@ -41,9 +41,37 @@ const float Damage = CombatConfig->BaseDamage;
 const float Speed = Stats->MovementSpeed * DeltaTime;
 ```
 
+Bevy (values from a config resource loaded from data):
+
+```rust
+fn apply_damage(
+    config: Res<CombatConfig>,
+    time: Res<Time>,
+    mut stats: Query<&mut Movement, With<Enemy>>,
+) {
+    let damage = config.base_damage;
+    for mut movement in &mut stats {
+        movement.speed = config.movement_speed * time.delta_secs();
+    }
+}
+```
+
 **Incorrect** (hardcoded):
 
 ```gdscript
 var damage: float = 25.0   # VIOLATION: hardcoded gameplay value
 var speed: float = 5.0      # VIOLATION: not from config, not using delta
+```
+
+Bevy:
+
+```rust
+// VIOLATION: hardcoded gameplay value, and a per-frame constant rather than
+// delta-scaled movement
+fn apply_damage(mut stats: Query<&mut Movement, With<Enemy>>) {
+    let damage: f32 = 25.0;
+    for mut movement in &mut stats {
+        movement.speed = 5.0;
+    }
+}
 ```

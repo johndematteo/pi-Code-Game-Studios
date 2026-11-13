@@ -20,10 +20,10 @@
    - Glob `.github/workflows/` — does a CI workflow file exist?
    - Glob `addons/gdUnit4/bin/GdUnitCmdTool.gd` (Godot — note the capital U) or
      `Assets/Tests/EditMode/` (Unity) or `Source/*/Private/Tests/` (Unreal) or
-     `package.json` and `playwright.config.ts` (Web) for
-     engine-specific artifacts. These are the **test roots** in
+     `package.json` and `playwright.config.ts` (Web) or `Cargo.toml` naming `bevy`
+     (Bevy) for engine-specific artifacts. These are the **test roots** in
      `studio/docs/directory-structure.md`; tests anywhere else are never compiled
-     on Unity or Unreal.
+     on Unity or Unreal, and a folder under `tests/` is never compiled on Bevy.
 
 3. **Report findings**:
    - "Engine: [engine]. Test directory: [found / not found]. CI workflow: [found / not found]."

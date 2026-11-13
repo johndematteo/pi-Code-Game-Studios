@@ -23,9 +23,10 @@ never a change to an existing one.
   engine, web included. Changing it is the user's own call, typed as
   `/setup-engine <engine>`.
 - **No engine set, but its files are on disk:** `project.godot` is Godot,
-  `ProjectSettings/ProjectVersion.txt` is Unity, a `*.uproject` is Unreal, and a
-  `package.json` is Web (`references/web.md` W1 records it as it is). Say what
-  you found and carry on with that engine; offer no other first.
+  `ProjectSettings/ProjectVersion.txt` is Unity, a `*.uproject` is Unreal, a
+  `package.json` is Web (`references/web.md` W1 records it as it is), and a
+  `Cargo.toml` naming `bevy` is Bevy (`references/bevy.md` B1). Say what you
+  found and carry on with that engine; offer no other first.
 
 Only a project with neither goes on below.
 
@@ -68,7 +69,7 @@ their words ("Your brief says console: Unity or Unreal fit that better").
 
 **Question 1 — Prior experience.** Ask: "Have you made a game in any of these
 before?" Options: `Web (TypeScript or JavaScript)` / `Godot` / `Unity` /
-`Unreal Engine 5`; a typed "none" or "several" is an answer too.
+`Unreal Engine 5` / `Bevy (Rust)`; a typed "none" or "several" is an answer too.
 - A specific engine → recommend it. Prior experience outweighs all other factors. Confirm with them and skip the rest.
 - None or several → continue below.
 
@@ -117,6 +118,12 @@ Do not use a simple scoring matrix that eliminates engines. Instead, reason thro
 - Licensing reality: 5% royalty only applies AFTER USD 1M gross revenue per title. For a first game or any game that doesn't reach USD 1M, it costs nothing. This threshold is high enough that most indie developers will never pay it.
 - Best fit: AAA-quality 3D; large open-world games; photorealistic visuals; developers with C++ experience or willing to use Blueprint; games targeting high-end PC/console where visual fidelity is a core selling point
 
+**Bevy (Rust)**
+- Genuine strengths: Open source under MIT/Apache-2.0 with no royalties and no revenue threshold; an ECS-first architecture that makes data-oriented gameplay code natural; Rust's compiler catches a class of bugs the other engines cannot; no editor to learn, so the code is the project; strongest on native desktop
+- Real limitations: Pre-1.0 and breaking its API roughly every release, with a migration guide per release and no semver stability promise; sparse documentation, so practitioners read the engine source; a large crate graph makes a clean build take minutes; the ecosystem (physics, networking, input mapping) trails each release by weeks; Web/WASM builds work but are single-threaded; no visual editor means level and UI work is code
+- Licensing reality: MIT OR Apache-2.0, irrevocably free, no revenue threshold ever. The risk is technical churn, not licensing.
+- Best fit: Rust developers; data-oriented or simulation-heavy designs; procedural and systems-driven games; developers who prefer code over an editor; projects that can absorb a dependency upgrade every few months
+
 **Genre-specific guidance** (factor this into the recommendation):
 - Small 2D, puzzle, arcade or jam game, or one to share by link → Web
 - 2D any style → Godot strongly preferred
@@ -129,6 +136,7 @@ Do not use a simple scoring matrix that eliminates engines. Instead, reason thro
 - Action RPG / Soulslike → Unity or Unreal for 3D; community support and assets matter here
 - Platformer 2D → Godot
 - Strategy / top-down / RTS → Godot or Unity depending on 2D vs 3D
+- Simulation, systems-driven or procedurally generated → Bevy, if the team writes Rust
 
 **Recommendation format:**
 1. Show a comparison table with the user's specific factors as rows

@@ -24,12 +24,14 @@ the reference does not cover is marked unverified, never asserted from memory.
   callback that fires after `queue_free()`/`Destroy`.
 - **Language idioms**: static typing (GDScript), no Godot 3 syntax (`yield`,
   string `connect`); Unity: no `Find` or `GetComponent` per frame, no boxing in
-  hot paths; Unreal: `UPROPERTY` on every `UObject*` the GC must see; Web: no
+  hot paths; Unreal: `UPROPERTY` on every `UObject*` the GC must see; Bevy: no
+  `Query` on a wide set every frame, no `Event` where 0.20's `Message` belongs,
+  no `unwrap()` on a query or resource the schedule does not guarantee; Web: no
   DOM work in the game loop.
 - **Signals and events**: connected once, disconnected when the listener goes
   first; no synchronous call chains disguised as signals.
 
-## Shader files (`specialists.shader`: `.gdshader`, `.hlsl`, `.shader`, `.usf`, shader graphs)
+## Shader files (`specialists.shader`: `.gdshader`, `.wgsl`, `.hlsl`, `.shader`, `.usf`, shader graphs)
 
 - Renderer and shader type fit the project (`shader_type`, render mode,
   Forward+/Mobile/Compatibility, URP/HDRP).

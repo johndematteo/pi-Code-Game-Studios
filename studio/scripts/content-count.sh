@@ -23,7 +23,7 @@
 #                   registry.sh, deprecated ones left out
 #   found [--engine E] [--files]
 #                   content files on disk for the engine (godot, unity,
-#                   unreal or web; default: engine.name as project-state.sh reads it)
+#                   unreal, web or bevy; default: engine.name as project-state.sh reads it)
 #   band FOUND SPECIFIED
 #                   the percentage and status band of one pair
 #   gap             rows `system<TAB>type<TAB>specified<TAB>found` on stdin:
@@ -48,15 +48,17 @@
 #   unity   Assets/         every type; no data/ segment needed
 #   unreal  Content/        every type; no data/ segment needed (Source/ holds
 #                           C++ only and is not searched)
+#   bevy    assets/         every type; assets/ is the AssetServer root and the
+#                           code root holds Rust, not content, so it is not searched
 # A root is looked for by its exact name, so Assets/ and assets/ are two roots
 # even on a case-insensitive disk. Each root is printed present or absent.
 # Under assets/ the four data types (characters, items, abilities, quests)
 # need a data/ folder as the first folder, as the skill's assets/data/** globs
 # do; levels and dialogue do not.
-#   levels      the engine's scene files: .tscn, .unity, .umap (one extension
-#               per engine, not all three); by levels counts them in folders
-#               named levels, areas, maps, worlds or stages. A UI scene counts
-#               too, as the skill says to count every match.
+#   levels      the engine's scene files: .tscn, .unity, .umap, .scn.ron (one
+#               extension per engine, not all of them); by levels counts them in
+#               folders named levels, areas, maps, worlds or stages. A UI scene
+#               counts too, as the skill says to count every match.
 #   characters  folders enemies, characters, npcs (npcs: the skill's heading
 #               names NPCs but its globs do not)
 #   items       folders items, equipment, loot; on Unity also any file named
@@ -67,8 +69,8 @@
 # Folder names compare in any case (items and Items). Files in them count when
 # their extension is one of the engine's data extensions: godot json, tres,
 # asset and, for characters, yaml, tscn and prefab, and for quests json and
-# yaml only; unity json, yaml, asset, prefab; unreal uasset. A file in two
-# folders of a type counts once in the type and once in each folder row.
+# yaml only; unity json, yaml, asset, prefab; unreal uasset; bevy ron. A file in
+# two folders of a type counts once in the type and once in each folder row.
 #
 # Output: TSV.
 #   registry:  registry <path> <entries | missing | layout>, planned
@@ -304,17 +306,20 @@ case "$LOW" in
   unity) ENG=unity ;;
   unreal*) ENG=unreal ;;
   web) ENG=web ;;
+  bevy) ENG=bevy ;;
   *)
-    if [ "$ESRC" = flag ]; then usage "--engine takes godot, unity, unreal or web, got $RAW"; fi
+    if [ "$ESRC" = flag ]; then usage "--engine takes godot, unity, unreal, web or bevy, got $RAW"; fi
     printf 'engine\t%s\t%s\n' "$RAW" "$ESRC"
-    echo "content-count: engine $RAW has no content rules here (godot, unity, unreal or web)" >&2
+    echo "content-count: engine $RAW has no content rules here (godot, unity, unreal, web or bevy)" >&2
     exit 3 ;;
 esac
 # The roots, from the engine table: assets/, then the engine's asset root
 # (Unity Assets/, Unreal Content/), or its code root where that asset root is
 # assets/ itself (Godot src/, Web src/). Web's data files sit in data/.
+# Bevy's content sits in assets/ alone: src/ holds Rust, not content.
 AROOT=$(cell asset_root); CROOT=$(cell code_root)
-if [ "$AROOT" = assets ]; then ROOTS="assets $CROOT"; else ROOTS="assets $AROOT"; fi
+if [ "$ENG" = bevy ]; then ROOTS="assets"
+elif [ "$AROOT" = assets ]; then ROOTS="assets $CROOT"; else ROOTS="assets $AROOT"; fi
 [ "$ENG" = web ] && ROOTS="assets data $CROOT"
 printf 'engine\t%s\t%s\n' "$ENG" "$ESRC"
 
@@ -350,6 +355,7 @@ printf '%s\n' "$LIST" | ENG="$ENG" SHOWFILES="$SHOWFILES" awk '
   function extok(g, e) {
     if (eng == "unreal") return (e == "uasset")
     if (eng == "unity") return (e == "json" || e == "yaml" || e == "asset" || e == "prefab")
+    if (eng == "bevy") return (e == "ron")
     if (g == "characters") return (e == "json" || e == "tres" || e == "asset" || e == "yaml" || e == "tscn" || e == "prefab")
     if (g == "quests") return (e == "json" || e == "yaml")
     return (e == "json" || e == "tres" || e == "asset")
@@ -373,8 +379,11 @@ printf '%s\n' "$LIST" | ENG="$ENG" SHOWFILES="$SHOWFILES" awk '
       g = G[gi]; hit = 0; nh = 0
       # Web has no scene files: its levels are data files in a levels/ folder.
       if (g == "levels" && eng != "web") {
-        sceneext = (eng == "godot") ? "tscn" : ((eng == "unity") ? "unity" : "umap")
-        if (ext != sceneext) continue
+        if (eng == "bevy") { if (p !~ /\.scn\.ron$/) continue }
+        else {
+          sceneext = (eng == "godot") ? "tscn" : ((eng == "unity") ? "unity" : "umap")
+          if (ext != sceneext) continue
+        }
         hit = 1
         for (i = 2; i < n; i++) { w = tolower(seg[i]); if (isfolder(g, w) && !(w in hs)) { hs[w] = 1; hn[++nh] = w } }
       } else if (g == "dialogue") {

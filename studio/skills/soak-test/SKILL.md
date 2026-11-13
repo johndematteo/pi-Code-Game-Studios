@@ -111,7 +111,8 @@ Engine-specific monitoring guidance.
 
 > **NOT SOURCEABLE — the tool, panel and counter names below are not covered by
 > `docs/engine-reference/`**: Godot's Debugger → Monitors and its memory
-> counters, Unity's Memory Profiler and its fields, Unreal's `stat memory`. Mark
+> counters, Unity's Memory Profiler and its fields, Unreal's `stat memory`,
+> Bevy's allocator instrumentation. Mark
 > them so in the protocol: they are pointers for the tester to confirm in their
 > own editor at T+0, not verified paths. If no memory tool can be found, nothing
 > was measured, and the Verdict section's NOT ASSESSED applies.
@@ -140,6 +141,21 @@ Engine-specific monitoring guidance.
   measured against this run's T+0. An absolute threshold such as "> 50MB"
   silently assumes both the unit *and* a project scale — 50MB is a rounding
   error for one game and a catastrophe for another
+
+**Bevy:**
+- Bevy has no built-in memory panel. Use the OS: Activity Monitor on macOS, Task
+  Manager on Windows, or `ps -o rss= -p <pid>` / `smem` on Linux, at each
+  checkpoint
+- Record: RSS (resident memory, **unit as displayed**) and the process's thread
+  count
+- Alert threshold: RSS growth **> 20% over the full soak**, measured against this
+  run's T+0 — the same monotonicity check as the others, deliberately unit-free
+- Entity and asset leaks show up as RSS growth with no scene change: if the
+  project exposes entity counts (a `Query` over the tracked component, or a
+  debug overlay), record that too. An entity count that returns to its T+0 value
+  while RSS does not is an allocator or asset-handle leak, not a game-logic one
+- Do **not** quote a Rust-side number from `std::alloc` unless the project has
+  installed a tracking allocator; if it has not, say so and use RSS
 
 ### Stability observation items (if focus = stability or all)
 

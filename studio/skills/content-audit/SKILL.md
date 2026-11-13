@@ -169,9 +169,19 @@ a `data/` segment — for items, `Assets/**/items/**`, `Assets/**/Items/**` and
 and `.prefab`. Skipping this finds zero items, abilities, quests and dialogue
 on a Unity project and reports them NOT STARTED.
 
+**On Bevy, content lives under `assets/`** as plain files — there is no importer
+and no `.meta` sidecar — while the code root (`src/`) holds the Rust that names
+them. A Bevy project has **no scene files** in the Godot/Unity sense: its levels
+are usually a `levels/` folder of data files under `assets/`, or entity spawning
+in code. So the `.tscn`/`.unity`/`.umap` globs below find nothing on Bevy; scan
+`assets/**/*.ron`, `assets/**/*.json` and `assets/**/*.scn.ron` instead, and
+treat `assets/**/*.scn.ron` as a scene file where the project uses it. Skipping
+this reports every level NOT STARTED on a Bevy project.
+
 **Levels / Areas / Maps:**
-- Glob `assets/**/*.tscn`, `assets/**/*.unity`, `assets/**/*.umap`
-- Glob the **code root** for scene files: `*.tscn` (Godot), `*.unity` (Unity); on Unreal, `Content/**/*.umap` instead (above). Web has no scene files: its levels are data files in a `levels/` folder under `data/` or `assets/data/`. Resolve the root per `studio/docs/code-root-resolution.md`. **If the code root is unresolved, report `NOT ASSESSED — code root unresolved` rather than zero hits.**
+- Glob `assets/**/*.tscn`, `assets/**/*.unity`, `assets/**/*.umap`,
+  `assets/**/*.scn.ron` (Bevy, when the project uses it)
+- Glob the **code root** for scene files: `*.tscn` (Godot), `*.unity` (Unity); on Unreal, `Content/**/*.umap` instead (above); on Bevy, `assets/**/*.scn.ron` (above). Web has no scene files: its levels are data files in a `levels/` folder under `data/` or `assets/data/`. Resolve the root per `studio/docs/code-root-resolution.md`. **If the code root is unresolved, report `NOT ASSESSED — code root unresolved` rather than zero hits.**
 - Look for scene files in subdirectories named `levels/`, `areas/`, `maps/`,
   `worlds/`, `stages/`
 - Count unique files that appear to be level/scene definitions (not UI scenes)

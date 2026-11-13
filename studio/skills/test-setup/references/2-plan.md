@@ -25,6 +25,10 @@ tests/
  instead — Unity Assets/Tests/EditMode|PlayMode/, Unreal
  Source/<Module>/Private/Tests/ — because neither compiles code in tests/]
 
+[Bevy: no unit/ or integration/ folder is created. Cargo compiles tests/<name>.rs
+ at the top of tests/ and #[cfg(test)] modules under src/, so a folder under
+ tests/ would never run. tests/README.md says where each kind belongs.]
+
 production/qa/
   evidence/       — Screenshot and manual test sign-off records
 

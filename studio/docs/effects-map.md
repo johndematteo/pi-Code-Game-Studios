@@ -1768,7 +1768,7 @@ is **invalid** with the reason, and never falls back to the engine's folder.
 
 **Controls:** Which engine-specific specialist agents are routed to for code
 implementation, review, and architecture validation  
-**Values:** `Godot` | `Unity` | `Unreal` | `Web` (with the capital: the check is case-sensitive, so `web` reads as unset)  
+**Values:** `Godot` | `Unity` | `Unreal` | `Web` | `Bevy` (with the capital: the check is case-sensitive, so `web` or `bevy` reads as unset)  
 **Default:** `[UNSET]` — must be configured via `/setup-engine`  
 **Set by:** `/setup-engine`; `/prototype`'s grow step (One-shot 5) writes `Web` and `engine.version` when it is unset, and never changes a set one  
 **Read by:** `dev-story`, `code-review`, `architecture-decision`, `create-architecture`, `team-combat`, `team-ui`, `team-audio`
@@ -1792,6 +1792,7 @@ implementation, review, and architecture validation
 | **Unity** | `unity-specialist` | `unity-shader-specialist` | `unity-ui-specialist` | `unity-addressables-specialist`, `unity-dots-specialist` |
 | **Unreal** | `unreal-specialist` | `unreal-specialist` | `ue-umg-specialist` | `ue-gas-specialist`, `ue-blueprint-specialist`, `ue-replication-specialist` |
 | **Web** | `lead-programmer` (no web specialist agent; engine checks go against `docs/engine-reference/web/`) | `lead-programmer` | `lead-programmer` | None |
+| **Bevy** | `lead-programmer` (no Bevy specialist agent; engine checks go against `docs/engine-reference/bevy/`) | `lead-programmer` | `lead-programmer` | None |
 | **[UNSET]** | No specialist spawned — warning emitted | No specialist spawned | No specialist spawned | None |
 
 ---

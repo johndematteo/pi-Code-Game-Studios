@@ -56,6 +56,7 @@ engine has a native way.
 | Unity 6 | built player `.exe -screen-width 1280 -screen-height 720 -screen-fullscreen 0 --scene <Name>` | `ScreenCapture.CaptureScreenshot(<abs path>)` from a bootstrap script | the absolute path you pass | `-batchmode`, `-nographics` | one MonoBehaviour |
 | Unreal 5 | `MSYS_NO_PATHCONV=1 "<UE root>/Engine/Binaries/Win64/UnrealEditor.exe" "$(pwd -W 2>/dev/null || pwd)/<Game>.uproject" <MapURL> -game -windowed -ResX=1280 -ResY=720` | `HighResShot 1280x720 filename=<abs path>` console command | the path you pass (else `Saved/Screenshots/WindowsEditor/`) | `-nullrhi`, `-unattended` alone | one actor or `-ExecCmds` |
 | Web (a browser game) | `bash studio/scripts/page-shot.sh <page>.html <path>.png --query <state>`; a web project's page is `dist-single/index.html`, after `npm run build:single` | the same command: headless Chrome, Edge or Chromium | the path you pass | `commands.run` (a dev server) | **none** |
+| Bevy | `cargo run` (native, a window); `cargo run --no-default-features --features default_app` for headless, which renders nothing | no CLI flag: spawn `Screenshot::primary_window()` with an observer calling `save_to_disk(<abs path>)` | the absolute path you pass to `save_to_disk` | `--headless` (Bevy has no such flag), and `MinimalPlugins` when you want an image | a small system that captures once, then sends `AppExit` |
 
 ### Web — headless Chrome or Edge
 
@@ -90,7 +91,6 @@ page saved. A one-shot's small check plays a few scripted keys this way
 check, not headless's.
 
 ### Godot 4 — zero scaffold
-
 ```
 godot --path . --windowed --resolution 1280x720 --write-movie shots/shop.png --quit-after 60 res://scenes/shop.tscn
 ```
@@ -211,6 +211,49 @@ no delay, so let `timeout` end the launch (exit 124 is expected) and check the
 file exists; a dev actor can instead wait a second, then `quit`. The Blueprint node `Take High Res Screenshot` is editor-only and
 does not work in a `-game` launch.
 
+### Bevy — a capture system, since there is no flag
+
+Bevy has no screenshot command-line flag. The API is a component plus an
+observer, verified in `bevy_render` 0.20.1
+(`src/view/window/screenshot.rs`): `Screenshot::primary_window()` spawns the
+capture, and an observer on the same entity receives `ScreenshotCaptured` when
+the image is ready — `save_to_disk` is that observer.
+
+```rust
+use bevy::prelude::*;
+use bevy::render::view::screenshot::{save_to_disk, Screenshot};
+use std::path::PathBuf;
+
+#[derive(Resource)]
+struct ShotAt { frame: u32, path: PathBuf }
+
+fn capture_at(mut commands: Commands, mut frame: Local<u32>, shot: Res<ShotAt>) {
+    *frame += 1;
+    if *frame == shot.frame {
+        commands
+            .spawn(Screenshot::primary_window())
+            .observe(save_to_disk(shot.path.clone()));
+    }
+}
+```
+
+Three things make this different from the other engines:
+
+- **The capture is asynchronous.** The image is not on disk on the frame the
+  component is spawned; the observer fires when it is ready. Quitting on the same
+  frame writes nothing — the same trap as Unreal's `Quit` in one `-ExecCmds`.
+  Send `AppExit` from the observer, or wait several frames.
+- **It needs a real window.** `Screenshot::primary_window()` reads the primary
+  window's target, so a `--no-default-features --features default_app` run with
+  `MinimalPlugins` renders nothing to capture. Capture needs `DefaultPlugins`
+  and a GPU or a software Vulkan driver (`mesa-vulkan-drivers` on Linux CI).
+- **The entity is despawned** after the capture and the observer run.
+
+Launch with `cargo run`, and have the system read its frame number and path from
+a resource set by an env var or an arg, so the same binary serves an interactive
+run and an evidence run. If no window can be created at all, use the OS capture
+fallback below and say so.
+
 ### Any engine — OS capture fallback
 
 On Windows, PowerShell with `System.Drawing` can `CopyFromScreen` into a bitmap
@@ -290,6 +333,7 @@ engine on this machine". Absence of a path is not absence of an engine.
 *Commands above were run on Windows with Godot 4.6.1 (gdUnit4 6.1.3) and the
 Godot ones again on 4.7.2 (gdUnit4 6.2.2), Unity
 6000.3.23f1 and Unreal Engine 5.7; the Unreal Linux and macOS notes come from
-Epic's documentation. `docs/engine-reference/<engine>/` is
+Epic's documentation. The Bevy capture API was read from `bevy_render` 0.20.1
+source, not run on a windowed build; `docs/engine-reference/<engine>/` is
 the project's pinned authority; check it before trusting a version-qualified
 claim here.*

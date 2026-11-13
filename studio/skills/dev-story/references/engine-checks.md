@@ -1,7 +1,7 @@
-# Phase 6: Parse check and capture on Unity and Unreal
+# Phase 6: Parse check and capture on Unity, Unreal and Bevy
 
-Read only when the engine is Unity or Unreal. Report the command, its exit code
-and any error lines. No executable: `parse NOT VERIFIED — engine binary not
+Read only when the engine is Unity, Unreal or Bevy. Report the command, its exit
+code and any error lines. No executable: `parse NOT VERIFIED — engine binary not
 available`.
 
 ## Unity
@@ -30,3 +30,18 @@ The commands are from Epic's documentation, as recorded in
 
 **Capture:** launch straight into the map the story touched, as
 `run-and-observe.md` gives it.
+
+## Bevy
+
+**Parse check:** `cargo check --tests`. A compile error fails it (`error[E…]`,
+non-zero exit), and it is the check that separates a compile error from a failing
+test — `cargo test` exits 101 for both. No `cargo`: `parse NOT VERIFIED — cargo not
+available`.
+
+**Capture:** Bevy has no screenshot hook in the engine. Run the game
+(`cargo run`) and capture the window with the platform's own tool — on macOS
+`screencapture -x <file>`, on Linux a compositor's screenshot tool — or, when the
+project has wired `bevy_dev_tools`' `ci_testing`, let that write the screenshot.
+With no capture path, report
+`Run result: NOT VERIFIED — no screenshot capture path for Bevy` rather than
+claiming the frame looked right.

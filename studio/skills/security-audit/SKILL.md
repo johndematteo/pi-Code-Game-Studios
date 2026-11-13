@@ -145,27 +145,28 @@ platform.online are false`).
 ### Engine pattern sets — read this before any Category below
 
 **Every pattern list in Categories 1–3 is written for Godot.** On a Unity or
-Unreal project they match nothing, and a zero-hit scan renders the report clean,
+Unreal or Bevy project they match nothing, and a zero-hit scan renders the report clean,
 "the most dangerous possible failure for a security audit". Use the table for
 `engine.name` resolved in Phase 1.
 
-| Category | Godot | Unity | Unreal |
-|---|---|---|---|
-| 1 — Save / serialization | the Godot list below | **NOT SOURCEABLE** | **NOT SOURCEABLE** |
-| 2 — Network / multiplayer | the Godot list below | `ServerRpc`, `ClientRpc`, `NetworkVariable`, `NetworkObject`, `NetworkManager`, `NetworkBehaviour`, `IsServer`, `IsOwner` | `UFUNCTION`, `Server`, `Client`, `NetMulticast`, `Replicated`, `DOREPLIFETIME`, `GetLifetimeReplicatedProps`, `HasAuthority` |
-| 3 — Input | the Godot list below | `InputSystem`, `PlayerInput`, `ReadValue`, `InputValue` | `EnhancedInput`, `UInputAction`, `InputMappingContext`, `BindAction`, `FInputActionValue` |
-| 4 — Data exposure | engine-agnostic — the list below applies to all three | | |
-| 5, 6 | judgement and manifests, not greps — no engine set needed | | |
+| Category | Godot | Unity | Unreal | Bevy |
+|---|---|---|---|---|
+| 1 — Save / serialization | the Godot list below | **NOT SOURCEABLE** | **NOT SOURCEABLE** | **NOT SOURCEABLE** — Bevy has no first-party save system; whether the project saves through `serde` or `bevy_reflect` is in its `Cargo.toml`, and the reference tree documents neither |
+| 2 — Network / multiplayer | the Godot list below | `ServerRpc`, `ClientRpc`, `NetworkVariable`, `NetworkObject`, `NetworkManager`, `NetworkBehaviour`, `IsServer`, `IsOwner` | `UFUNCTION`, `Server`, `Client`, `NetMulticast`, `Replicated`, `DOREPLIFETIME`, `GetLifetimeReplicatedProps`, `HasAuthority` | **NOT SOURCEABLE** — Bevy core has no networking; grep the crate named in `Cargo.toml` (`lightyear` is the de-facto one) and read its names at `docs.rs`, not from this repo |
+| 3 — Input | the Godot list below | `InputSystem`, `PlayerInput`, `ReadValue`, `InputValue` | `EnhancedInput`, `UInputAction`, `InputMappingContext`, `BindAction`, `FInputActionValue` | `ButtonInput<KeyCode>`, `ButtonInput<MouseButton>`, `just_pressed` (`bevy/modules/input.md`); an action-mapped project adds `leafwing-input-manager`, whose `ActionState`/`InputMap` are at `docs.rs` |
+| 4 — Data exposure | engine-agnostic — the list below applies to every engine | | | |
+| 5, 6 | judgement and manifests, not greps — no engine set needed | | | |
 
 The Unity and Unreal names above are **sourced from this repo's pinned
 references** (`docs/engine-reference/unity/modules/{networking,input}.md`,
-`docs/engine-reference/unreal/modules/{networking,input}.md`), not from recall.
+`docs/engine-reference/unreal/modules/{networking,input}.md`), and the Bevy names
+from `docs/engine-reference/bevy/modules/input.md`, not from recall.
 Verify them against the pin before use and add what the reference documents that
 this table omits — it is a floor, not a complete set.
 
 > **`NOT SOURCEABLE` is a verdict, not a gap to fill from memory.** Neither
 > reference tree carries a serialization/save module, so the save-API names for
-> Unity and Unreal cannot be confirmed here. **Do not write them from training
+> Unity, Unreal and Bevy cannot be confirmed here. **Do not write them from training
 > data.** A confidently wrong pattern list is worse in this skill than in any
 > other: it produces a scan that looks thorough, finds nothing, and reads as a
 > pass. Where the table says NOT SOURCEABLE, that category is **`NOT ASSESSED`**

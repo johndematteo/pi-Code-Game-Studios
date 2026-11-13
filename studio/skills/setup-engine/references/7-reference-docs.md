@@ -15,14 +15,19 @@
 **Web:** the reference ships complete; compare it with the scaffold and write
 nothing (`references/web.md`, W4).
 
+**Bevy:** the reference ships complete for 0.20.1; record the project's version in
+`Project Pinned` and `Installed at pin time`, and write nothing else
+(`references/bevy.md`, B4).
+
 ### First: does a reference set already exist for this engine?
 
 **Check before doing anything else.** The template ships
-`docs/engine-reference/godot/`, `unity/` and `unreal/` **already populated**, so
-"the directory exists and pins a version" is the state of *every* fresh project,
-not an edge case. Both branches below say "create", and following either one
-literally on a pre-populated directory either overwrites curated content or
-leaves `project.yaml` and the AGENTS.md-imported reference disagreeing.
+`docs/engine-reference/godot/`, `unity/`, `unreal/`, `web/` and `bevy/` **already
+populated**, so "the directory exists and pins a version" is the state of *every*
+fresh project, not an edge case. Both branches below say "create", and following
+either one literally on a pre-populated directory either overwrites curated
+content or leaves `project.yaml` and the AGENTS.md-imported reference
+disagreeing.
 
 Read `docs/engine-reference/<engine>/VERSION.md` and compare its
 **Engine Version** to the version chosen in Section 3:

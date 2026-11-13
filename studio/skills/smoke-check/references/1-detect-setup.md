@@ -24,9 +24,11 @@ Before running anything, understand the environment:
    that `tests/` does. Check the engine's **test root** (from step 3; the table
    is in `studio/docs/directory-structure.md` — Godot `tests/unit/` and
    `tests/integration/`, Unity `Assets/Tests/`, Unreal
-   `Source/*/Private/Tests/`) and `tests/smoke/` for actual test files. A
+   `Source/*/Private/Tests/`, Bevy `tests/*.rs` and `#[cfg(test)]` modules under
+   `src/`) and `tests/smoke/` for actual test files. A
    **test file** is one the engine's test runner executes — a `*_test.gd` suite,
-   a C# test class, an Unreal automation test source. Markdown checklists do not
+   a C# test class, an Unreal automation test source, a `tests/*.rs` cargo target
+   or a `#[cfg(test)]` module. Markdown checklists do not
    count: `/test-setup` always writes `tests/smoke/critical-paths.md`, and
    counting it would hide exactly the zero-test state this step exists to catch.
    If none are found **at `qa.level: minimal`**, tests are waived at this level:
@@ -54,7 +56,10 @@ Before running anything, understand the environment:
    > and `tests/integration/` with placeholder files, so the directory tree is
    > present on any project that ran setup — whether or not a single game test
    > was ever written. Count actual test files instead; gated on the directory,
-   > a project with no build and zero game tests passes this step.
+   > a project with no build and zero game tests passes this step. **On Bevy the
+   > placeholders do not exist at all** (cargo would not compile a folder under
+   > `tests/`), so `tests/` holding only `README.md` and `smoke/` is the normal
+   > zero-test state.
 
 2. **CI check**: check whether `.github/workflows/` contains a workflow file
    referencing tests. Note in the report whether CI is configured.
@@ -77,6 +82,12 @@ Before running anything, understand the environment:
    space; on Unreal, `<UE root>` is `engine.path`. If none resolves, the test
    runner is not available (Phase 2) — on Godot,
    `NOT ASSESSED — Godot executable not found (commands.test, engine.path, PATH)`.
+
+   **On Bevy there is no editor executable:** the runner is `cargo`, from the Rust
+   toolchain. Resolve it the same way (`commands.test`'s first word, else
+   `engine.path`, else `cargo` on `PATH`), and when it does not resolve report
+   `NOT ASSESSED — cargo not found (commands.test, engine.path, PATH)`. Also
+   require `Cargo.toml` at the project root: without it there is no crate to test.
 
 4. **Smoke test list**: check whether `production/qa/smoke-tests.md` or
    `tests/smoke/` exists. If a smoke test list is found, load it for use in

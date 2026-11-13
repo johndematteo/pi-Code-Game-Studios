@@ -35,8 +35,8 @@ appropriate design or architecture documentation. Use this when:
   load it.
 
 **Path**: Directory or file to analyze, under the code root — `src/` Godot,
-`Assets/` Unity, `Source/<Module>/` Unreal (`studio/docs/code-root-resolution.md`)
-- `src/gameplay/combat/` → All combat-related code (Godot)
+Bevy and Web, `Assets/` Unity, `Source/<Module>/` Unreal (`studio/docs/code-root-resolution.md`)
+- `src/gameplay/combat/` → All combat-related code (Godot, Bevy)
 - `Assets/Scripts/Core/EventSystem.cs` → Specific file (Unity)
 - `Source/MyGame/Private/AI/` → A module folder (Unreal)
 - `prototypes/stealth-mech/` → Prototype directory

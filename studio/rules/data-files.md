@@ -9,7 +9,7 @@ paths:
 # Data File Rules
 
 - All JSON files must be valid JSON — broken JSON blocks the entire build pipeline
-- File naming (Godot and Web data): lowercase with underscores only, following `[system]_[name].json` pattern.
+- File naming (Godot, Web and Bevy data): lowercase with underscores only, following `[system]_[name].json` pattern.
   Unity and Unreal data keep the engine's PascalCase; `validate-assets.sh` checks names only in `assets/`.
   On Web, `data/config.json` keeps its name: the game and its tweak panel read that file, and
   each tuning value in it is an object of `value`, `min`, `max` and `step`
@@ -28,6 +28,13 @@ paths:
   > `System.Text.Json` `JsonNamingPolicy`). Do **not** switch the file to camelCase
   > to avoid the DTO: keys are the cross-engine contract. Write the DTO and
   > document it as a wire-format boundary — that is the intended shape.
+
+  > **On Bevy the mapping is the same problem on the Rust side.** `serde` derives
+  > a struct's field names verbatim, and `naming.variables` makes those
+  > `snake_case`, so a `snake_case` data file binds directly — that is the happy
+  > path, and the reason Bevy data files are named like Godot's. Where a project
+  > uses `#[serde(rename_all = "camelCase")]`, the file is camelCase and the
+  > contract has moved: keep it consistent across every file rather than mixing.
 - No orphaned data entries — every entry must be referenced by code or another data file
 - Version data files when making breaking schema changes
 - Include sensible defaults for all optional fields

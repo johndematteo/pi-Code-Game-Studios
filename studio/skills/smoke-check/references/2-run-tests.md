@@ -186,6 +186,39 @@ cannot tell a run of zero tests from a full one, so say so in the report;
 `web:no-test-script` (package.json has no test script, or npm's placeholder):
 `NOT ASSESSED — no tests found`.
 
+**Bevy** — `commands.test` is `cargo test`. Run it through the helper, which
+compiles the crate first and reads the run apart:
+```bash
+bash studio/scripts/test-run.sh bevy
+```
+Its `rule` row gives the verdict:
+- **`bevy:pass`** — exit 0 with a passing `test result:` summary: PASS, with the
+  `tests` row's count. The count is summed across every test target, because
+  `cargo test` prints one summary line per target.
+- **`bevy:failed`** — a test failed (the `failed` rows name it): FAIL.
+- **`bevy:check-failed`** — `cargo check --tests` failed, so the crate does not
+  compile and no test ran: FAIL, with the `evidence` row's `error[E…]` line. This
+  is why the check runs first: `cargo test` exits 101 for a compile error and a
+  failing test alike.
+- **`bevy:zero-tests`** — every target reported `0 passed; 0 failed`
+  (`running 0 tests`): `NOT ASSESSED — no tests found`, never a pass.
+- **`bevy:compile-failed`** — an `error[E…]` line with a non-zero exit and no
+  summary: FAIL.
+- **`bevy:nonzero`** — another non-zero exit with nothing read: FAIL.
+- **`bevy:no-manifest`** — no `Cargo.toml` at the project root: nothing to test.
+- **`runner-unavailable`** — `cargo` did not resolve in Phase 1 step 3:
+  `NOT ASSESSED — cargo not found`.
+
+A timeout is a FAILURE as on every engine. A render-touching test on a machine
+with no wgpu adapter fails for a reason that is not the game's: say so, and point
+at `docs/engine-reference/bevy/modules/testing.md` (`MinimalPlugins`, the
+`default_app` headless feature set).
+
+Another `commands.test` (an existing project's own, which `/setup-engine bevy`
+records) runs through the same helper, and is read by the same rules; a command
+that is not `cargo test` still gets the `check` row, so a compile error is never
+reported as a test failure.
+
 **Unknown engine / not configured:**
 "Engine not configured in `project.yaml` or
 `studio/docs/technical-preferences.md`. Run `/setup-engine` to specify the

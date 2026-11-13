@@ -28,6 +28,7 @@ Probe for the binary (Bash), and treat failure as unknown, never as absent:
 | Godot | `godot --version`, else look for `godot`/`Godot_v*` on PATH or in the platform's usual install location (macOS: the binary inside the bundle, `Godot.app/Contents/MacOS/Godot`) |
 | Unity | The Hub's editor directory, then that editor's `-version` — `C:/Program Files/Unity/Hub/Editor/<version>/Editor/Unity.exe` on Windows, `/Applications/Unity/Hub/Editor/<version>/Unity.app/Contents/MacOS/Unity` on macOS, `/home/<user>/Unity/Hub/Editor/<version>/Editor/Unity` on Linux. Not bare `Unity`: on `PATH` it may be Unity's separate CLI, which rejects `-version` |
 | Unreal | The launcher's install directory (`UE_<version>` folders under `C:/Program Files/Epic Games/` on Windows); elsewhere, ask where the engine was built or installed. The editor is not on `PATH` by default |
+| Bevy | `cargo --version` and `rustc --version` for the toolchain, then the crate's own version: `grep -n "bevy" Cargo.toml Cargo.lock` in the project (there is no Bevy binary to probe — the engine is a dependency). Compare the toolchain against the release's `rust-version` (MSRV); an older toolchain will not build the crate. A project with no `Cargo.toml` has no installed version yet |
 
 Keep the executable the probe found (for Godot, whether bare `godot --version`
 ran — that is, `godot` is on `PATH`): Section 5.5.1 writes it into `commands.*`

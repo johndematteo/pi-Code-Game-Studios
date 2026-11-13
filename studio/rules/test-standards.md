@@ -1,6 +1,7 @@
 ---
 paths:
   - "tests/**"
+  - "src/**/*.rs"
   - "Assets/Tests/**/*.cs"
   - "Source/**/Tests/**/*.{h,cpp}"
 ---
@@ -26,6 +27,12 @@ paths:
     (Vitest) or `[system].spec.ts` under `tests/integration/` (Playwright),
     test `'[scenario] [expected]'` in plain words —
     `it('keeps the square inside the field')`
+  - **Bevy (cargo test, libtest):** unit tests in a `#[cfg(test)] mod tests`
+    beside the code they cover, function `[scenario]_[expected]`; integration
+    tests in `tests/[system].rs`, the same function shape —
+    `tests/combat.rs` → `fn base_attack_returns_expected_damage()`. **A folder
+    under `tests/` is not a cargo test target**: `tests/unit/rules.rs` is never
+    compiled, because cargo reads `tests/*.rs` (plus `tests/<dir>/main.rs`)
 - Every test must have a clear arrange/act/assert structure
 - Unit tests must not depend on external state (filesystem, network, database)
 - Integration tests must clean up after themselves
@@ -112,6 +119,31 @@ bool FHealthTakeDamageTest::RunTest(const FString& Parameters)
 
 #endif
 ```
+
+Bevy, `cargo test` (`tests/combat.rs`):
+
+```rust
+use bevy::ecs::system::RunSystemOnce;
+use bevy::prelude::*;
+
+#[test]
+fn base_attack_returns_expected_damage() {
+    // Arrange — a World, not a window: MinimalPlugins keeps the test headless
+    let mut world = World::new();
+    world.insert_resource(Health { current: 100, max: 100 });
+
+    // Act
+    world.run_system_once(apply_damage);
+
+    // Assert
+    assert_eq!(world.resource::<Health>().current, 75);
+}
+```
+
+> A Bevy test that builds `DefaultPlugins` needs a real renderer. Prefer
+> `MinimalPlugins` + `App::update()`, or `World::run_system_once` for one system;
+> the headless feature set is `--no-default-features --features default_app`.
+> See `docs/engine-reference/bevy/modules/testing.md`.
 
 **Incorrect**:
 
